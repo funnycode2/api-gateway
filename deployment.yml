@@ -1,0 +1,47 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: gateway
+  namespace: platform
+spec:
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: gateway
+    spec:
+      affinity:
+        podAntiAffinity:
+           requiredDuringSchedulingIgnoredDuringExecution:
+           - labelSelector:
+               matchExpressions:
+               - key: app
+                 operator: In
+                 values:
+                 - gateway
+             topologyKey: "kubernetes.io/hostname"
+      containers:
+        - name: gateway
+          image: golang:1.8
+          livenessProbe:
+            httpGet:
+              path: /api.html?type=gateway_test
+              port: 8888
+            initialDelaySeconds: 20
+            timeoutSeconds: 20
+            periodSeconds: 60
+          workingDir: "/go/src/gateway"
+          command: ["go", "run", "src/main.go"]
+          env:
+          - name: zk_servers
+            value: "zk-client.platform:80"
+          volumeMounts:
+          - mountPath: "/go/src"
+            name: code
+            subPath: code/gateway/gateway
+          ports:
+            - containerPort: 8888
+      volumes:
+        - name: code
+          persistentVolumeClaim:
+            claimName: platform-nas
