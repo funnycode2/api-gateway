@@ -4,4 +4,4 @@ main
 
 .arcconfig
 
-.iml
+*.iml
