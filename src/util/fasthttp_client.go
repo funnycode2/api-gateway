@@ -9,6 +9,7 @@ import (
     "time"
     "github.com/valyala/fasthttp"
     "code.aliyun.com/wyunshare/thrift-server/conf"
+    "fmt"
 )
 
 var (
@@ -70,6 +71,10 @@ type clientConn struct {
 
 // Do do a http request
 func (c *FastHTTPClient) Do(req *fasthttp.Request, addr string) (*fasthttp.Response, error) {
+
+    fmt.Println(req.Header.String())
+    fmt.Println(req.PostArgs().String())
+
     resp, retry, err := c.do(req, addr)
     if err != nil && retry && isIdempotent(req) {
         resp, _, err = c.do(req, addr)
