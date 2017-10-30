@@ -12,6 +12,11 @@ type ProxyHandler struct{
 	writerPool sync.Pool
 }
 
+const (
+	BUF_SIZE = 4096
+)
+
+
 func (h *ProxyHandler) Matches(url string) bool {
 	return true
 }
@@ -36,13 +41,11 @@ func (h *ProxyHandler) Handle(
 
 	upRes.Reset()
 	upRes.Read(reader)
-	ctx.SetStatusCode(res.StatusCode())
-	ctx.Write(upRes.Body())
-}
 
-const (
-	BUF_SIZE = 1
-)
+	upRes.Header.Set("Content-Type", "text/html")
+	upRes.Header.CopyTo(&res.Header)
+	res.AppendBody(upRes.Body())
+}
 
 func (c *ProxyHandler) acquireWriter(conn *net.Conn) *bufio.Writer {
 	writer := c.writerPool.Get()
