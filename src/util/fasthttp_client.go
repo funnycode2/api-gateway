@@ -166,6 +166,7 @@ func (c *FastHTTPClient) doNonNilReqResp(req *fasthttp.Request, resp *fasthttp.R
         }
     }
 
+    // bug?
     if !req.Header.IsGet() && req.Header.IsHead() {
         resp.SkipBody = true
     }

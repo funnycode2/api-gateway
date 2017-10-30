@@ -1,0 +1,28 @@
+# 数据源
+[jdbc]
+db_host=119.23.18.211:3306
+db_username=root
+db_password=root
+db_name=gateway
+max_conns=512
+max_conn_duration=10
+max_idle_conn_duration=10
+read_buffer_size=4096
+write_buffer_size=4096
+read_timeout=30
+write_timeout=30
+max_response_body_size=104857600
+# 扩展
+[oauth_center]
+oauth_addr=http://118.31.158.168/oauth
+grant_type=
+client_id=
+client_secret=
+# 协议
+[kafaka]
+DingDing=
+kafka_host=
+
+[zookeeper]
+zookeeper_server=120.55.33.120:2181
+zookeeper_path=/config-center/gateway
