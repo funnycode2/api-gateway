@@ -2,52 +2,58 @@ package filter
 
 import (
 	"github.com/valyala/fasthttp"
-	"gateway/src/filter"
+	"gateway/src/goaway/mapping"
+	"gateway/src/goaway/handler"
 )
 
 type Filter interface {
 	Matches(url string) bool
-	DoFilter(req *fasthttp.Request, res *fasthttp.Response, chain *FilterChain)
+	DoFilter(req *fasthttp.Request, res *fasthttp.Response, chain *filterChain)
 }
 
-type FilterChain struct {
+type filterChain struct {
 	count   int
 	req     *fasthttp.Request
 	res     *fasthttp.Response
 	ctx     *fasthttp.RequestCtx
-	filters [](*Filter)
-	host    string
+	filters []Filter
+	mapping mapping.Mapping
+	handler handler.Handler
 }
 
-func BuildFilterChain(ctx *fasthttp.RequestCtx) *FilterChain {
-	return nil
+func BuildFilterChain(
+	ctx *fasthttp.RequestCtx,
+	filters []Filter,
+	mapping mapping.Mapping,
+	handler handler.Handler) *filterChain {
+	return &filterChain{
+		count:   0,
+		req:     &ctx.Request,
+		res:     &ctx.Response,
+		ctx:     ctx,
+		filters: filters,
+		mapping: mapping,
+		handler: handler,
+	}
 }
 
-func (chain *FilterChain) DoFilter() {
+func (chain *filterChain) DoFilter() {
 	var (
 		count   = chain.count
 		filters = chain.filters
 		req     = chain.req
 		res     = chain.res
+		mapping = chain.mapping
+		ctx     = chain.ctx
+		handler = chain.handler
 	)
 	if count < len(filters) {
-		chain.count = count +  	3 80;'
-		0-'
-		filter := *filters[count]
-		filter.DoFilter(req, res, chain)
+		chain.count = count + 1
+		filters[count].DoFilter(req, res, chain)
 	} else {
-		var (
-			ctx  = chain.ctx
-			host = chain.host
-
-		doReq(req, res, ctx, host)
+		if mapping != nil {
+			target := mapping.TargetHost()
+			handler.Handle(req, res, ctx, target)
+		}
 	}
-}
-
-func doReq(
-	req *fasthttp.Request,
-	res *fasthttp.Response,
-	ctx *fasthttp.RequestCtx,
-	host string) {
-
 }
