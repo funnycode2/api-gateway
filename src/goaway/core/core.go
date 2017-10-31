@@ -3,35 +3,18 @@ package core
 import (
 	"github.com/valyala/fasthttp"
 	"gateway/src/goaway/context"
-	ghandler "gateway/src/goaway/mapping"
 	"gateway/src/goaway/filter"
-	"gateway/src/goaway/handler"
 )
 
 func HttpHandler(ctx *fasthttp.RequestCtx) {
 	var (
-		appctx   = context.Context
-		req      = ctx.Request
-		uri      = (string)(req.Header.RequestURI())
-		filters  = appctx.Filters
-		mappings = appctx.Mappings
-		handlers = appctx.Handlers
+		appctx  = context.Context
+		uri     = (string)(ctx.Request.Header.RequestURI())
+		filters = appctx.Filters
 	)
 
-	var matchMapping ghandler.Mapping
-	for _, h := range mappings {
-		match := h.Matches(uri)
-		if match {
-			matchMapping = h
-			break
-		}
-	}
-
-	if mappings == nil {
-		return
-	}
-
-	matchFilters := make([]filter.Filter, 0)
+	//将匹配的过滤器找出来, 按顺序组成数组 (核心过滤器(CoreFilter)总是在第一个)
+	var matchFilters []filter.Filter
 	for _, f := range filters {
 		match := f.Matches(uri)
 		if match {
@@ -39,19 +22,6 @@ func HttpHandler(ctx *fasthttp.RequestCtx) {
 		}
 	}
 
-	var matchHandler handler.Handler
-	for _, h := range handlers {
-		match := h.Matches(uri)
-		if match {
-			matchHandler = h
-			break
-		}
-	}
-
-	if matchHandler == nil {
-		return
-	}
-
-	filterChain := filter.BuildFilterChain(ctx, matchFilters, matchMapping, matchHandler)
-	filterChain.DoFilter()
+	filterChain := filter.NewFilterChain(matchFilters)
+	filterChain.DoFilter(&ctx.Request, &ctx.Response, ctx, filterChain)
 }
