@@ -49,5 +49,5 @@ func init() {
 
 	Context.AddMapping(&mapping.DefaultMapping{})
 
-	Context.AddHandler(&handler.ProxyHandler{})
+	Context.AddHandler(&handler.ProxyHandler2{})
 }
