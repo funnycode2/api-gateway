@@ -42,7 +42,6 @@ func (h *ProxyHandler) Handle(
 	upRes.Reset()
 	upRes.Read(reader)
 
-	upRes.Header.Set("Content-Type", "text/html")
 	upRes.Header.CopyTo(&res.Header)
 	res.AppendBody(upRes.Body())
 }

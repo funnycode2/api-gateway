@@ -37,8 +37,6 @@ func (h *ProxyHandler2) Handle(
 
 	fasthttp.Do(upReq, upRes)
 
-	upRes.Header.Set("Content-Type", "text/html")
-	res.SetStatusCode(upRes.StatusCode())
 	upRes.Header.CopyTo(&res.Header)
 	res.AppendBody(upRes.Body())
 }

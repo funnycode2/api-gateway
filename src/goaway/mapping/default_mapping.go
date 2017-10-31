@@ -7,5 +7,5 @@ func (m *DefaultMapping) Matches(uri string) bool {
 }
 
 func (m *DefaultMapping) TargetHost() string {
-	return "localhost:9999"
+	return "localhost:8080"
 }
