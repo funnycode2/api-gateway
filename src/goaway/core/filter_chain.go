@@ -8,7 +8,10 @@ import (
 type FilterChain struct {
 	count   int
 	filters []Filter
+	handler Handler
 }
+
+var gaDefaultHandler = &defaultHandler{}
 
 func NewFilterChain(
 	filters []Filter) *FilterChain {
@@ -34,7 +37,18 @@ func (chain *FilterChain) DoFilter(
 		filters[count].DoFilter(req, res, ctx, chain)
 	} else {
 		//最后一个过滤器执行完后会向后端请求服务
-		fasthttp.Do(req, res)
+		handler := chain.handler
+		if handler == nil {
+			gaDefaultHandler.Do(req, res)
+		} else {
+			handler.Do(req, res)
+		}
 	}
 
+}
+
+func (chain *FilterChain) SetHandler(handler *Handler) {
+	if handler != nil {
+		chain.handler = handler
+	}
 }

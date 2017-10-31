@@ -7,18 +7,19 @@ import (
 type GaServer struct {
 	context *Context
 }
+
 var (
-	coreFilter = &CoreFilter{}
+	gaCoreFilter = &coreFilter{}
 )
 
 func NewGaServer(context *Context) *GaServer {
 	var gaFilter []Filter
 	filters := context.Filters
 	if filters == nil || len(filters) == 0 {
-		gaFilter = []Filter{coreFilter}
+		gaFilter = []Filter{gaCoreFilter}
 	} else {
-		if filters[0] != coreFilter {
-			gaFilter = append([]Filter{coreFilter}, filters...)
+		if filters[0] != gaCoreFilter {
+			gaFilter = append([]Filter{gaCoreFilter}, filters...)
 		}
 	}
 	context.Filters = gaFilter
@@ -34,7 +35,7 @@ func (server*GaServer) Serve(ctx *fasthttp.RequestCtx) {
 		filters = gaCtx.Filters
 	)
 
-	//将匹配的过滤器找出来, 按顺序组成数组 (核心过滤器(CoreFilter)总是在第一个)
+	//将匹配的过滤器找出来, 按顺序组成数组 (核心过滤器(gaCoreFilter)总是在第一个)
 	var matchFilters []Filter
 	for _, f := range filters {
 		match := f.Matches(uri)
