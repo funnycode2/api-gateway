@@ -1,32 +1,35 @@
-package proxy
+package ext
 
 import (
 	"github.com/valyala/fasthttp"
-	"errors"
-	"gateway/src/model"
-	"net/http"
-	"encoding/json"
-	"io/ioutil"
-	"log"
-	"strconv"
+	"gateway/src/goaway/core"
 	"gateway/src/util"
 )
 
-func (h *HttpProxy) CheckToken(req *fasthttp.Request, result *model.RouteResult) (bool, error) {
-	accessToken := req.URI().QueryArgs().Peek("access_token")
+type OauthFilter struct{}
+
+var (
+	oauthAddr = util.GetConfigCenterInstance().ConfProperties["oauth_center"]["oauth_addr"]
+)
+
+func (OauthFilter) Matches(url string) bool {
+	return true
+}
+
+func (OauthFilter) DoFilter(
+	req *fasthttp.Request,
+	res *fasthttp.Response,
+	ctx *fasthttp.RequestCtx,
+	chain *core.FilterChain) {
+
+	/*accessToken := req.URI().QueryArgs().Peek("access_token")
 	if nil == accessToken {
-		return false, errors.New("No access token")
+		res.SetStatusCode(http.StatusUnauthorized)
+		return
 	}
 	//res, err := h.fastHTTPClient.Do(outReq, config.TConfig.OauthHost
-	conf := util.GetConfigCenterInstance()
-	res, err := http.Get(conf.ConfProperties["oauth_center"]["oauth_addr"] + "/user/getUser?access_token=" + string(accessToken))
-	result.Res = &fasthttp.Response{}
-
-	if res == nil {
-		res = new(http.Response)
-	}
-
-	result.Res.SetStatusCode(res.StatusCode)
+	fasthttp.Re
+	authRes, err := http.Get(oauthAddr + "/user/getUser?access_token=" + string(accessToken))
 
 	if err != nil {
 		log.Println(err)
@@ -56,5 +59,5 @@ func (h *HttpProxy) CheckToken(req *fasthttp.Request, result *model.RouteResult)
 		return true, nil
 	} else {
 		return false, err
-	}
+	}*/
 }

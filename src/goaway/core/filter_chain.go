@@ -1,42 +1,40 @@
-package filter
+package core
 
 import (
 	"github.com/valyala/fasthttp"
 )
 
 //简单的责任链模式
-type filterChain struct {
+type FilterChain struct {
 	count   int
 	filters []Filter
 }
 
 func NewFilterChain(
-	filters []Filter) *filterChain {
-	return &filterChain{
+	filters []Filter) *FilterChain {
+	return &FilterChain{
 		count:   0,
 		filters: filters,
 	}
 }
 
-func (chain *filterChain) DoFilter(
+func (chain *FilterChain) DoFilter(
 	req *fasthttp.Request,
 	res *fasthttp.Response,
 	ctx *fasthttp.RequestCtx,
-	chain2 *filterChain) {
+	chain2 *FilterChain) {
 
 	var (
 		count   = chain.count
 		filters = chain.filters
 	)
 
-	total := len(filters) - 1
-	if count <= total {
+	if count < len(filters) {
 		chain.count = count + 1
 		filters[count].DoFilter(req, res, ctx, chain)
-	}
-
-	//最后一个过滤器执行完后会向后端请求服务
-	if count == total {
+	} else {
+		//最后一个过滤器执行完后会向后端请求服务
 		fasthttp.Do(req, res)
 	}
+
 }

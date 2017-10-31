@@ -1,4 +1,4 @@
-package filter
+package core
 
 import (
 	"github.com/valyala/fasthttp"
@@ -16,7 +16,7 @@ func (f *CoreFilter) DoFilter(
 	req *fasthttp.Request,
 	res *fasthttp.Response,
 	ctx *fasthttp.RequestCtx,
-	chain *filterChain) {
+	chain *FilterChain) {
 
 	//记录错误信息
 	defer logError()

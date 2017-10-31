@@ -1,4 +1,4 @@
-package filter
+package core
 
 import (
 	"github.com/valyala/fasthttp"
@@ -11,5 +11,5 @@ type Filter interface {
 		req *fasthttp.Request,
 		res *fasthttp.Response,
 		ctx *fasthttp.RequestCtx,
-		chain *filterChain)
+		chain *FilterChain)
 }

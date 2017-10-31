@@ -1,49 +1,49 @@
 package proxy
 
 import (
-    "io"
-    "net/http"
-    "sync"
-    "time"
+	"io"
+	"net/http"
+	"sync"
+	"time"
 
-    "github.com/valyala/fasthttp"
+	"github.com/valyala/fasthttp"
 )
 
 type writeFlusher interface {
-    io.Writer
-    http.Flusher
+	io.Writer
+	http.Flusher
 }
 
 type maxLatencyWriter struct {
-    dst     writeFlusher
-    latency time.Duration
+	dst     writeFlusher
+	latency time.Duration
 
-    lk   sync.Mutex // protects Write + Flush
-    done chan bool
+	lk   sync.Mutex // protects Write + Flush
+	done chan bool
 }
 
 func (m *maxLatencyWriter) Write(p []byte) (int, error) {
-    m.lk.Lock()
-    defer m.lk.Unlock()
-    return m.dst.Write(p)
+	m.lk.Lock()
+	defer m.lk.Unlock()
+	return m.dst.Write(p)
 }
 
 func (m *maxLatencyWriter) flushLoop() {
-    t := time.NewTicker(m.latency)
-    defer t.Stop()
-    for {
-        select {
-        case <-m.done:
-            if onExitFlushLoop != nil {
-                onExitFlushLoop()
-            }
-            return
-        case <-t.C:
-            m.lk.Lock()
-            m.dst.Flush()
-            m.lk.Unlock()
-        }
-    }
+	t := time.NewTicker(m.latency)
+	defer t.Stop()
+	for {
+		select {
+		case <-m.done:
+			if onExitFlushLoop != nil {
+				onExitFlushLoop()
+			}
+			return
+		case <-t.C:
+			m.lk.Lock()
+			m.dst.Flush()
+			m.lk.Unlock()
+		}
+	}
 }
 
 func (m *maxLatencyWriter) stop() { m.done <- true }
@@ -53,34 +53,34 @@ func (m *maxLatencyWriter) stop() { m.done <- true }
 var onExitFlushLoop func()
 
 func copyHeader(dst, src http.Header) {
-    for k, vv := range src {
-        for _, v := range vv {
-            dst.Add(k, v)
-        }
-    }
+	for k, vv := range src {
+		for _, v := range vv {
+			dst.Add(k, v)
+		}
+	}
 }
 
 type requestCanceler interface {
-    CancelRequest(*http.Request)
+	CancelRequest(*http.Request)
 }
 
 type runOnFirstRead struct {
-    io.Reader
+	io.Reader
 
-    fn func() // Run before first Read, then set to nil
+	fn func() // Run before first Read, then set to nil
 }
 
 func (c *runOnFirstRead) Read(bs []byte) (int, error) {
-    if c.fn != nil {
-        c.fn()
-        c.fn = nil
-    }
-    return c.Reader.Read(bs)
+	if c.fn != nil {
+		c.fn()
+		c.fn = nil
+	}
+	return c.Reader.Read(bs)
 }
 
 func copyRequest(req *fasthttp.Request) *fasthttp.Request {
-    newreq := fasthttp.AcquireRequest()
-    newreq.Reset()
-    req.CopyTo(newreq)
-    return newreq
+	newreq := fasthttp.AcquireRequest()
+	newreq.Reset()
+	req.CopyTo(newreq)
+	return newreq
 }
