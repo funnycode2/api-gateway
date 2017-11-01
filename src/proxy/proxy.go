@@ -138,7 +138,14 @@ func (h *HttpProxy) doProxy(ctx *fasthttp.RequestCtx, wg *sync.WaitGroup, result
 		defer wg.Done()
 	}
 
-	outReq := copyRequest(&ctx.Request)
+	//outReq := copyRequest(&ctx.Request)
+	//使用以下方式复制请求
+	outReq := fasthttp.AcquireRequest()
+	defer fasthttp.ReleaseRequest(outReq)
+	outReq.Reset()
+	req := ctx.Request
+	req.Header.CopyTo(&outReq.Header)
+	outReq.SetBody(req.Body())
 
 	c := model.NewContext(h.routeTable, ctx, outReq, result)
 
