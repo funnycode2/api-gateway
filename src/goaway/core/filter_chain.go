@@ -49,6 +49,6 @@ func (chain *FilterChain) DoFilter(
 
 func (chain *FilterChain) SetHandler(handler *Handler) {
 	if handler != nil {
-		chain.handler = handler
+		chain.handler = *handler
 	}
 }
