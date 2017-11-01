@@ -27,20 +27,21 @@ func (f *coreFilter) DoFilter(
 	res *fasthttp.Response,
 	ctx *fasthttp.RequestCtx,
 	chain *FilterChain) {
-
-	//记录错误信息
+	//捕获并记录错误信息
 	defer logError()
 
-	upReq := fasthttp.AcquireRequest()
+	//使用原始请求作为后端服务请求, 原因是在文件上传的时候通过 CopyTo方法得到的请求会丢失请求体, 其具体原因还有待确认
+	/*upReq := fasthttp.AcquireRequest()
 	upReq.Reset()
 	req.CopyTo(upReq)
-	defer fasthttp.ReleaseRequest(upReq)
+	defer fasthttp.ReleaseRequest(upReq)*/
 
 	upRes := fasthttp.AcquireResponse()
 	upRes.Reset()
 	defer fasthttp.ReleaseResponse(upRes)
 
-	chain.DoFilter(upReq, upRes, ctx, chain)
+	chain.DoFilter(req, upRes, ctx, chain)
+	//chain.DoFilter(upReq, upRes, ctx, chain)
 
 	//将后端服务的响应最终写回
 	upRes.Header.CopyTo(&res.Header)

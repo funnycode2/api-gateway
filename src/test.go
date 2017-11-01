@@ -14,7 +14,7 @@ const (
 func main() {
 
 	context := core.Context{}
-	context.AddFilter(&ext.OauthFilter{})
+	//context.AddFilter(&ext.OauthFilter{})
 	context.AddFilter(&ext.GapFilter{})
 	gaServer := core.NewGaServer(&context)
 

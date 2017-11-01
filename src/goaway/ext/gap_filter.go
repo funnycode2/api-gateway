@@ -18,12 +18,9 @@ func (GapFilter) DoFilter(
 	ctx *fasthttp.RequestCtx,
 	chain *core.FilterChain) {
 	req.SetHost("localhost:8080")
-	uri := string(req.RequestURI())
-	println(uri)
-	if strings.HasPrefix(uri, "/gap/login") {
-		req.SetRequestURI("/gap/login")
-	}
+	println("up request:")
 	println(req.String())
 	chain.DoFilter(req, res, ctx, chain)
+	println("up response:")
 	println(res.String())
 }
