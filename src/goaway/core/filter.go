@@ -40,7 +40,7 @@ func (f *coreFilter) DoFilter(
 	upRes.Reset()
 	defer fasthttp.ReleaseResponse(upRes)
 
-	chain.DoFilter(req, upRes, ctx, chain)
+	chain.DoFilter(req, upRes, ctx)
 	//chain.DoFilter(upReq, upRes, ctx, chain)
 
 	//将后端服务的响应最终写回

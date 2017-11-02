@@ -18,11 +18,11 @@ var (
 		"/user/getUser?access_token="
 )
 
-func (OauthFilter) Matches(url string) bool {
+func (f *OauthFilter) Matches(url string) bool {
 	return true
 }
 
-func (OauthFilter) DoFilter(
+func (f *OauthFilter) DoFilter(
 	req *fasthttp.Request,
 	res *fasthttp.Response,
 	ctx *fasthttp.RequestCtx,
@@ -72,7 +72,7 @@ func (OauthFilter) DoFilter(
 		}
 
 		//认证通过, 放通该请求
-		chain.DoFilter(req, res, ctx, chain)
+		chain.DoFilter(req, res, ctx)
 
 	} else {
 		res.SetStatusCode(authRes.StatusCode())

@@ -24,8 +24,7 @@ func NewFilterChain(
 func (chain *FilterChain) DoFilter(
 	req *fasthttp.Request,
 	res *fasthttp.Response,
-	ctx *fasthttp.RequestCtx,
-	chain2 *FilterChain) {
+	ctx *fasthttp.RequestCtx) {
 
 	var (
 		count   = chain.count
@@ -48,6 +47,7 @@ func (chain *FilterChain) DoFilter(
 }
 
 func (chain *FilterChain) SetHandler(handler *Handler) {
+	//之所以加入非空判断, 是为了排查问题时更容易找到第一个修改handler的过滤器
 	if handler != nil {
 		chain.handler = *handler
 	}
