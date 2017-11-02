@@ -23,7 +23,7 @@ func NewGaServer(
 func (server *gaServer) Start() {
 	log.Info("Ga-server listening on port: ", server.port)
 	message := fasthttp.ListenAndServe(":"+strconv.Itoa(server.port), server.serve)
-	log.Errorf("Ga-server (port: %d) exited due to error: 	%s", server.port, message)
+	log.Errorf("Ga-server (port: %d) exited due to error: %s", server.port, message)
 }
 
 func (server *gaServer) serve(ctx *fasthttp.RequestCtx) {
