@@ -45,6 +45,7 @@ func (server *gaServer) LoadContext(c *context) {
 	}
 	lock.Lock()
 	defer lock.Unlock()
+	go server.context.onDestroy() //为了快速切换上下文
 	server.context = c
 	log.Info("new context loaded")
 }
@@ -59,7 +60,7 @@ func (server *gaServer) serve(ctx *fasthttp.RequestCtx) {
 	var (
 		gaCtx   = server.context
 		uri     = string(ctx.Request.Header.RequestURI())
-		filters = gaCtx.Filters()
+		filters = &gaCtx.filters
 	)
 
 	//将匹配的过滤器找出来, 按顺序组成数组

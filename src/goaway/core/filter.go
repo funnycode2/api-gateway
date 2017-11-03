@@ -14,9 +14,12 @@ type Filter interface {
 		chain *FilterChain)
 
 	Handler() Handler
+
+	OnDestroy()
 }
 
-type BaseFilter struct{}
+type BaseFilter struct {
+}
 
 func (b *BaseFilter) Matches(url string) bool {
 	return true
@@ -33,3 +36,5 @@ func (b *BaseFilter) DoFilter(
 func (b *BaseFilter) Handler() Handler {
 	return nil
 }
+
+func (b *BaseFilter) OnDestroy() {}

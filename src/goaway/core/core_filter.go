@@ -6,7 +6,9 @@ import (
 )
 
 //系统核心过滤器, 该过滤器必须作为第一个过滤器来执行
-type coreFilter struct{}
+type coreFilter struct{
+	BaseFilter
+}
 
 func (f *coreFilter) Matches(url string) bool {
 	return true

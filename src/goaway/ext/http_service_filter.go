@@ -28,6 +28,7 @@ func NewBasicServiceFilter(
 	if e != nil {
 		log.Panic(e)
 	}
+	//TODO 校验主机和端口
 	checkedTargetHost := targetHostWithPort
 	return &basicServiceFilter{
 		prefix:             normalizePrefix,
@@ -50,6 +51,10 @@ func (f *basicServiceFilter) DoFilter(
 	targetURI := strings.Replace(reqURI, f.prefix, f.targetPrefix, -1)
 	req.Header.SetRequestURI(targetURI)
 	chain.DoFilter(req, res, ctx)
+}
+
+func (f *basicServiceFilter) OnDestroy() {
+	log.Info("destroying basic service filter")
 }
 
 var emptyUrlError = errors.New("empty url not allowed")
