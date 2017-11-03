@@ -11,7 +11,9 @@ import (
 	"github.com/labstack/gommon/log"
 )
 
-type OauthFilter struct{}
+type OauthFilter struct {
+	core.BaseFilter
+}
 
 var (
 	oauthAddr = util.GetConfigCenterInstance().ConfProperties["oauth_center"]["oauth_addr"] +

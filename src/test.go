@@ -16,10 +16,10 @@ func main() {
 	context := core.NewContext()
 	//context.AddFilter(&ext.OauthFilter{})
 	context.AddFilter(ext.NewBasicServiceFilter(
-		"/gap", "/gap", "newyuncaijia.igap.cc"))
+		"/1", "/1", "news.mydrivers.com"))
 	gaServer := core.NewGaServer(port, context)
 	//LoadContext用于热配置
-	gaServer.LoadContext(nil)
+	gaServer.LoadContext(context)
 	go func() {
 		gaServer.Start()
 		wg.Done()

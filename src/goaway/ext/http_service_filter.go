@@ -9,6 +9,7 @@ import (
 )
 
 type basicServiceFilter struct {
+	core.BaseFilter
 	prefix             string //服务名前缀
 	targetPrefix       string //目标前缀
 	targetHostWithPort string //目标主机

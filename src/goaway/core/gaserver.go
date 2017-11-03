@@ -17,6 +17,12 @@ type gaServer struct {
 func NewGaServer(
 	port int,
 	context *context) *gaServer {
+	if port < 0 {
+		log.Panic("Invalid port number, must be positive number")
+	}
+	if context == nil {
+		log.Panic("Nil context not allowed")
+	}
 	return &gaServer{
 		port:        port,
 		context:     context,
@@ -56,7 +62,7 @@ func (server *gaServer) serve(ctx *fasthttp.RequestCtx) {
 		filters = gaCtx.Filters()
 	)
 
-	//将匹配的过滤器找出来, 按顺序组成数组 (核心过滤器(gaCoreFilter)总是在第一个)
+	//将匹配的过滤器找出来, 按顺序组成数组
 	var matchFilters []Filter
 	for _, f := range *filters {
 		match := f.Matches(uri)
@@ -65,6 +71,6 @@ func (server *gaServer) serve(ctx *fasthttp.RequestCtx) {
 		}
 	}
 
-	filterChain := NewFilterChain(matchFilters)
+	filterChain := newFilterChain(matchFilters)
 	filterChain.DoFilter(&ctx.Request, &ctx.Response, ctx)
 }
