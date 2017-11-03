@@ -10,19 +10,18 @@ import (
 )
 
 type InfoCount struct {
-	RequestUrl string	`json:"RequestUrl"`
-	RequestContent string	`json:"RequestContent"`
-	ResponseContent string	`json:"ResponseContent"`
-	UsedTime int64	`json:"UsedTime"`
+	RequestUrl      string `json:"RequestUrl"`
+	RequestContent  string `json:"RequestContent"`
+	ResponseContent string `json:"ResponseContent"`
+	UsedTime        int64  `json:"UsedTime"`
 }
 
-
-func SendToKafka(info *InfoCount , topic string)  {
+func SendToKafka(info *InfoCount, topic string) {
 
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Println("ERROR!! ",err)
-			v := fmt.Sprintf("ERROR!!\n%s--\n  stack \n%s", err,string(debug.Stack()))
+			fmt.Println("ERROR!! ", err)
+			v := fmt.Sprintf("ERROR!!\n%s--\n  stack \n%s", err, string(debug.Stack()))
 			SendToDingDing(v)
 		}
 	}()

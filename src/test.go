@@ -3,6 +3,7 @@ package main
 import (
 	"gateway/src/goaway/core"
 	"gateway/src/goaway/ext"
+	"sync"
 )
 
 const (
@@ -10,9 +11,18 @@ const (
 )
 
 func main() {
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
 	context := core.NewContext()
 	//context.AddFilter(&ext.OauthFilter{})
-	context.AddFilter(&ext.GapFilter{})
+	context.AddFilter(ext.NewBasicServiceFilter(
+		"/gap", "/gap", "newyuncaijia.igap.cc"))
 	gaServer := core.NewGaServer(port, context)
-	gaServer.Start()
+	//LoadContext用于热配置
+	gaServer.LoadContext(nil)
+	go func() {
+		gaServer.Start()
+		wg.Done()
+	}()
+	wg.Wait()
 }

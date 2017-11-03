@@ -8,40 +8,56 @@ import (
 	"github.com/labstack/gommon/log"
 )
 
-type commonServiceFilter struct{
-	prefix string //服务名前缀
+type basicServiceFilter struct {
+	prefix             string //服务名前缀
+	targetPrefix       string //目标前缀
+	targetHostWithPort string //目标主机
 }
 
-func NewCommonServiceFilter(prefix string) *commonServiceFilter {
-	normalizeUrl, e := normalizeUrl(prefix)
+//基本服务过滤器, 提供简单的前缀匹配和目标前缀重写,主机端口重写
+func NewBasicServiceFilter(
+	prefix string,
+	targetPrefix string,
+	targetHostWithPort string) *basicServiceFilter {
+	normalizePrefix, e := normalizeUrl(prefix)
 	if e != nil {
 		log.Panic(e)
 	}
-	return &commonServiceFilter{
-		prefix: normalizeUrl,
+	normalizeTargetPrefix, e := normalizeUrl(targetPrefix)
+	if e != nil {
+		log.Panic(e)
+	}
+	checkedTargetHost := targetHostWithPort
+	return &basicServiceFilter{
+		prefix:             normalizePrefix,
+		targetPrefix:       normalizeTargetPrefix,
+		targetHostWithPort: checkedTargetHost,
 	}
 }
 
-func (f *commonServiceFilter) Matches(url string) bool {
+func (f *basicServiceFilter) Matches(url string) bool {
 	return strings.HasPrefix(url, f.prefix)
 }
 
-func (f *commonServiceFilter) DoFilter(
+func (f *basicServiceFilter) DoFilter(
 	req *fasthttp.Request,
 	res *fasthttp.Response,
 	ctx *fasthttp.RequestCtx,
 	chain *core.FilterChain) {
-	req.SetHost("localhost:8080")
+	req.SetHost(f.targetHostWithPort)
+	reqURI := string(req.Header.RequestURI())
+	targetURI := strings.Replace(reqURI, f.prefix, f.targetPrefix, -1)
+	req.Header.SetRequestURI(targetURI)
 	chain.DoFilter(req, res, ctx)
 }
 
-var errorEmptyUrl = errors.New("empty url not allowed")
+var emptyUrlError = errors.New("empty url not allowed")
 
 //将url正则化如: url := "\\aaa\\\\bb/\\" 转化成  /aaa/bb
 func normalizeUrl(url string) (string, error) {
 	url = strings.Replace(url, "\\", "/", -1)
 	if len(url) == 0 {
-		return string(nil), errorEmptyUrl
+		return "", emptyUrlError
 	}
 	splits := strings.Split(url, "/")
 	var normalized string
@@ -51,7 +67,7 @@ func normalizeUrl(url string) (string, error) {
 		}
 	}
 	if len(normalized) == 0 {
-		return string(nil), errorEmptyUrl
+		return "", emptyUrlError
 	}
 	return normalized, nil
 }

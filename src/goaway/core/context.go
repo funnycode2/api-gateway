@@ -30,7 +30,7 @@ func (c *context) AddFilter(filter Filter) {
 		//添加非重复的过滤器
 		for _, f := range filters {
 			if f == filter {
-				log.Infof("Ignore filter for  duplication: %s",
+				log.Infof("Ignore filter for duplication: %s",
 					reflect.ValueOf(filter).Type().String())
 				return
 			}
