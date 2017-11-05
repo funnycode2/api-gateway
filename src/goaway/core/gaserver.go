@@ -9,19 +9,19 @@ import (
 
 type gaServer struct {
 	port        int //监听端口号
-	context     *context
+	context     *GaContext
 	runOnce     *sync.Once  //启动方法只能调用一次
 	contextLock *sync.Mutex //上下文加载控制锁
 }
 
 func NewGaServer(
 	port int,
-	context *context) *gaServer {
+	context *GaContext) *gaServer {
 	if port < 0 {
 		log.Panic("Invalid port number, must be positive number")
 	}
 	if context == nil {
-		log.Panic("Nil context not allowed")
+		log.Panic("Nil GaContext not allowed")
 	}
 	return &gaServer{
 		port:        port,
@@ -37,17 +37,17 @@ func (server *gaServer) Start() {
 }
 
 //提供上下文加载方法, 从而支持热配置
-func (server *gaServer) LoadContext(c *context) {
-	lock := server.contextLock
+func (server *gaServer) LoadContext(c *GaContext) {
 	if c == nil {
-		log.Error("empty context, not loaded")
+		log.Error("empty GaContext, not loaded")
 		return
 	}
+	lock := server.contextLock
 	lock.Lock()
 	defer lock.Unlock()
 	go server.context.onDestroy() //为了快速切换上下文
 	server.context = c
-	log.Info("new context loaded")
+	log.Info("new GaContext loaded")
 }
 
 func (server *gaServer) start() {

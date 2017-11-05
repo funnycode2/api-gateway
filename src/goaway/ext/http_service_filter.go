@@ -4,8 +4,8 @@ import (
 	"strings"
 	"github.com/valyala/fasthttp"
 	"gateway/src/goaway/core"
-	"errors"
 	"github.com/labstack/gommon/log"
+	"gateway/src/goaway/util"
 )
 
 type basicServiceFilter struct {
@@ -20,20 +20,21 @@ func NewBasicServiceFilter(
 	prefix string,
 	targetPrefix string,
 	targetHostWithPort string) *basicServiceFilter {
-	normalizePrefix, e := normalizeUrl(prefix)
+	normalizePrefix, e := util.NormalizeUri(prefix)
 	if e != nil {
 		log.Panic(e)
 	}
-	normalizeTargetPrefix, e := normalizeUrl(targetPrefix)
+	normalizeTargetPrefix, e := util.NormalizeUri(targetPrefix)
 	if e != nil {
 		log.Panic(e)
 	}
-	//TODO 校验主机和端口
-	checkedTargetHost := targetHostWithPort
+	if !util.MatchHost(targetHostWithPort) {
+		log.Panicf("Invalid host with port: %s, only 'service', 'service:8080', '12.12.12.12', 'user.service:1080' allowed", targetHostWithPort)
+	}
 	return &basicServiceFilter{
 		prefix:             normalizePrefix,
 		targetPrefix:       normalizeTargetPrefix,
-		targetHostWithPort: checkedTargetHost,
+		targetHostWithPort: targetHostWithPort,
 	}
 }
 
@@ -55,25 +56,4 @@ func (f *basicServiceFilter) DoFilter(
 
 func (f *basicServiceFilter) OnDestroy() {
 	log.Info("destroying basic service filter")
-}
-
-var emptyUrlError = errors.New("empty url not allowed")
-
-//将url正则化如: url := "\\aaa\\\\bb/\\" 转化成  /aaa/bb
-func normalizeUrl(url string) (string, error) {
-	url = strings.Replace(url, "\\", "/", -1)
-	if len(url) == 0 {
-		return "", emptyUrlError
-	}
-	splits := strings.Split(url, "/")
-	var normalized string
-	for _, split := range splits {
-		if trimmed := strings.TrimSpace(split); len(trimmed) > 0 {
-			normalized = normalized + "/" + trimmed
-		}
-	}
-	if len(normalized) == 0 {
-		return "", emptyUrlError
-	}
-	return normalized, nil
 }

@@ -5,7 +5,7 @@ import (
 )
 
 type Filter interface {
-	Matches(url string) bool
+	Matches(uri string) bool
 
 	DoFilter(
 		req *fasthttp.Request,
@@ -18,10 +18,9 @@ type Filter interface {
 	OnDestroy()
 }
 
-type BaseFilter struct {
-}
+type BaseFilter struct{}
 
-func (b *BaseFilter) Matches(url string) bool {
+func (b *BaseFilter) Matches(uri string) bool {
 	return true
 }
 

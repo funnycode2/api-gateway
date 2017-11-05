@@ -50,5 +50,4 @@ func (chain *FilterChain) DoFilter(
 		//最后一个过滤器执行完后会向后端请求服务
 		chain.handler.Do(req, res)
 	}
-
 }
