@@ -1,12 +1,13 @@
 package goaway_example
 
 import (
-	"gateway/src/model"
 	"gateway/src/goaway/core"
+	"database/sql"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type mysqlAppContext struct {
-	db *model.MysqlStore
+	db *sql.DB
 }
 
 func NewMqlAppContext() *mysqlAppContext {
@@ -15,14 +16,15 @@ func NewMqlAppContext() *mysqlAppContext {
 	return &context
 }
 
+const connUrl = "root:Tc123456@tcp(rm-wz9s84w75709ryaw7o.mysql.rds.aliyuncs.com:3306)/gateway"
+
 func (a *mysqlAppContext) init() {
 	// 获取数据库
-	a.db = model.NewMysqlStore(
-		"rm-wz9s84w75709ryaw7o.mysql.rds.aliyuncs.com:3306",
-		"root",
-		"Tc123456",
-		"gateway")
-
+	db, _ := sql.Open("mysql", connUrl)
+	db.SetMaxOpenConns(100) //最大连接数
+	db.SetMaxIdleConns(50)  //最大闲置数
+	db.Ping()
+	a.db = db
 }
 
 type uriHost struct {
@@ -68,7 +70,7 @@ func (a *mysqlAppContext) VisitUriFilters(ctx *core.GaContext) {
 }
 
 func (a *mysqlAppContext) queryUriHosts() []uriHost {
-	rows, _ := a.db.DB.Query(SQL1)
+	rows, _ := a.db.Query(SQL1)
 	defer rows.Close()
 	var uriHosts []uriHost
 	for rows.Next() {
@@ -85,7 +87,7 @@ type uriFilter struct {
 }
 
 func (a *mysqlAppContext) queryUriFilters() []uriFilter {
-	rows, _ := a.db.DB.Query(SQL2)
+	rows, _ := a.db.Query(SQL2)
 	defer rows.Close()
 	var uriFilters []uriFilter
 	for rows.Next() {
