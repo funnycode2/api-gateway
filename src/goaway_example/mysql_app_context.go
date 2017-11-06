@@ -4,6 +4,9 @@ import (
 	"gateway/src/goaway/core"
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
+	"gateway/src/goaway_example/web"
+	"strings"
+	"strconv"
 )
 
 type mysqlAppContext struct {
@@ -96,4 +99,76 @@ func (a *mysqlAppContext) queryUriFilters() []uriFilter {
 		uriFilters = append(uriFilters, uf)
 	}
 	return uriFilters
+}
+
+const PAGE_SIZE = 50
+
+func (a *mysqlAppContext) QueryService(
+	uri string,
+	desc string,
+	currentPage int) web.MResult {
+	hasUri := len(uri) > 0
+	hasDesc := len(desc) > 0
+	if !strings.HasPrefix(uri, "/") {
+		uri = "/" + uri
+	}
+	var sqltext string
+	if !hasUri && !hasDesc {
+		sqltext = "select a.api_id as apiid, a.uri, a.`desc`, a.status from api a ORDER BY a.uri"
+	}
+	if hasUri && hasDesc {
+		sqltext = "select a.api_id as apiid, a.uri, a.`desc`, a.status from api a where a.uri like '" + uri + "%' or a.`desc` like '%" + desc + "%' ORDER BY a.uri"
+	}
+	if hasUri && !hasDesc {
+		sqltext = "select a.api_id as apiid, a.uri, a.`desc`, a.status from api a where a.uri like '" + uri + "%' ORDER BY a.uri"
+	}
+	if !hasUri && hasDesc {
+		sqltext = "select a.api_id as apiid, a.uri, a.`desc`, a.status from api a where a.`desc` like '%" + desc + "%' ORDER BY a.uri"
+	}
+
+	//查询总条数
+	countRow, _ := a.db.Query("select count(0) from (" + sqltext + ") t")
+	defer countRow.Close()
+	mPage := web.MPage{}
+	if countRow.Next() {
+		countRow.Scan(&mPage.TotalCount)
+	}
+
+	//计算设置分页的参数
+	totalPage := (mPage.TotalCount + PAGE_SIZE - 1) / PAGE_SIZE
+	if totalPage < currentPage {
+		currentPage = totalPage - 1
+	}
+	if currentPage < 0 {
+		currentPage = 0
+	}
+	mPage.CurrentPage = currentPage + 1
+	sqltext += " limit " + strconv.Itoa(currentPage * PAGE_SIZE) + ", " + strconv.Itoa(PAGE_SIZE)
+
+	//获取服务查询结果
+	rows, _ := a.db.Query(sqltext)
+	defer rows.Close()
+	var services []web.Mservice
+	for rows.Next() {
+		ms := web.Mservice{}
+		rows.Scan(&ms.Apiid, &ms.Uri, &ms.Desc, &ms.Status)
+		services = append(services, ms)
+	}
+
+	//关联过滤器
+	for _, service := range services {
+		rows, _ := a.db.Query("select a.filter_id as filterid, a.name, a.status from filter a where a.api_id = " + strconv.Itoa(service.Apiid))
+		defer rows.Close()
+		for rows.Next() {
+			mf := web.Mfilter{}
+			rows.Scan(&mf.Filterid, &mf.Name, &mf.Status)
+			service.Filters = append(service.Filters, mf)
+		}
+	}
+
+	result := web.MResult{}
+	result.MPage = mPage
+	result.Mservicelist = services
+
+	return result
 }
