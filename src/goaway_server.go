@@ -71,7 +71,7 @@ func (b *JsonFilter) DoFilter(
 		}
 		result := appContext.QueryService(prefix, desc, currentpageInt)
 		res.Header.SetBytesKV(constants.CONTENT_TYPE, []byte("application/json"))
-		json, _ := json.Marshal(result)
+		json, _ := json.Marshal(*result)
 		res.SetBody(json)
 	}
 }

@@ -3,7 +3,7 @@
     <meta charset="UTF-8">
     <script type="text/javascript" src="dist/jquery-3.2.1.min.js"></script>
     <script type="text/javascript" src="dist/materialize.js"></script>
-    <script src="https://unpkg.com/vue"></script>
+    <script type="text/javascript" src="dist/vue.js"></script>
     <link rel="stylesheet" href="dist/materialize.css" type="text/css"/>
 </head>
 <body>
@@ -30,54 +30,59 @@
             </form>
         </div>
     </nav>
-    <ul class="pagination">
-        <li class="disabled"><a href="#!"><i class="mdi-navigation-chevron-left"></i></a></li>
-        <li class="active"><a href="#!">1</a></li>
-        <li class="waves-effect"><a href="#!">2</a></li>
-        <li class="waves-effect"><a href="#!">3</a></li>
-        <li class="waves-effect"><a href="#!">4</a></li>
-        <li class="waves-effect"><a href="#!">5</a></li>
-        <li class="waves-effect"><a href="#!"><i class="mdi-navigation-chevron-right"></i></a></li>
-    </ul>
-    <ul class="collapsible" data-collapsible="accordion">
-        <li v-for="service in servicelist">
-            <div class="collapsible-header">
-                <i class="mdi-image-filter-drama"></i>
-                {{ service.Uri }}
-                <div class="switch">
-                    <label>
-                        Off
-                        <input type="checkbox" :checked="checked(service.Status)">
-                        <span class="lever"></span>
-                        On
-                    </label>
+    <div v-show="servicelist">
+        <ul class="pagination">
+            <li class="waves-effect">Total {{ TotalCount }}</li>
+            <li v-for="index in pageTotal"
+                v-bind:class="{'active': index == currentPage, 'waves-effect': index != currentPage}"
+            >
+                <a @click="changePage(index)">{{ index }}</a></li>
+        </ul>
+        <ul class="collapsible" data-collapsible="accordion">
+            <li v-for="service in servicelist">
+                <div class="collapsible-header">
+                    <i class="mdi-image-filter-drama"></i>
+                    {{ service.Uri }}
+                    <div class="switch">
+                        <label>
+                            Off
+                            <input type="checkbox" :checked="checked(service.Status)" @click="changeStatus(service)">
+                            <span class="lever"></span>
+                            On
+                        </label>
+                    </div>
                 </div>
-            </div>
-            <div class="collapsible-body">
-                <p v-for="filter in service.Filters">
-                    <input type="checkbox" class="filled-in" v-bind:id="filterId(filter.id)"
-                           :checked="checked(filter.status)"/>
-                    <label v-bind:for="filterId(filter.id)">{{ filter.name }}</label>
-                </p>
-            </div>
-        </li>
-    </ul>
-    <ul class="pagination">
-        <li class="disabled"><a href="#!"><i class="mdi-navigation-chevron-left"></i></a></li>
-        <li class="active"><a href="#!">1</a></li>
-        <li class="waves-effect"><a href="#!">2</a></li>
-        <li class="waves-effect"><a href="#!">3</a></li>
-        <li class="waves-effect"><a href="#!">4</a></li>
-        <li class="waves-effect"><a href="#!">5</a></li>
-        <li class="waves-effect"><a href="#!"><i class="mdi-navigation-chevron-right"></i></a></li>
-    </ul>
+                <div class="collapsible-body">
+                    <p v-for="filter in service.Filters">
+                        <input type="checkbox" class="filled-in" v-bind:id="filterId(filter.Filterid)"
+                               :checked="checked(filter.Status)"/>
+                        <label v-bind:for="filterId(filter.Filterid)">{{ filter.Name }}</label>
+                    </p>
+                </div>
+            </li>
+        </ul>
+        <ul class="pagination">
+            <li class="waves-effect">Total {{ TotalCount }}</li>
+            <li v-for="index in pageTotal"
+                v-bind:class="{'active': index == currentPage, 'waves-effect': index != currentPage}"
+            >
+                <a @click="changePage(index)">{{ index }}</a></li>
+        </ul>
+    </div>
+    <div v-show="!servicelist">
+        <div class="chip">
+            no result found!
+        </div>
+    </div>
 </div>
 <script>
-    var vm = new Vue({
+    new Vue({
         el: '#app',
         data: {
             searchText: '',
-            servicelist: []
+            pageTotal: 1,
+            currentPage: 1,
+            TotalCount: 0
         },
         methods: {
             checked: function (status) {
@@ -85,64 +90,44 @@
             },
             filterId: function (id) {
                 return 'filter-' + id
+            },
+            changePage: function (page) {
+                this.currentPage = page
+            },
+            changeStatus: function (service) {
+                if (service.Status === 1) {
+                    service.grey = 'grey'
+                } else {
+                    service.grey = ''
+                }
             }
         },
-        watch: {
-            searchText: function (searchText) {
-                var _this = this
-                $.ajax({
-                    url: '/admin/service/list?prefix=' + searchText,
-                    success: function (data) {
-                        _this.servicelist = data.Mservicelist
-                    }
-                })
-
+        computed: {
+            servicelist: {
+                get: function () {
+                    var _this = this
+                    var params = $.param({
+                        prefix: _this.searchText,
+                        desc: _this.searchText,
+                        currentpage: _this.currentPage
+                    })
+                    var servicelist
+                    $.ajax({
+                        url: '/admin/service/list?' + params,
+                        async: false,
+                        success: function (data) {
+                            servicelist = data.Mservicelist
+                            var totalCount = data.TotalCount;
+                            _this.pageTotal = parseInt((totalCount + 50 - 1) / 50)
+                            _this.currentPage = parseInt(data.CurrentPage)
+                            _this.TotalCount = parseInt(data.TotalCount)
+                        }
+                    });
+                    return servicelist ? servicelist : {}
+                }
             }
         }
     })
-
-
-
-
-
-    var servicelist = [{
-        uri: '/institution-client/list',
-        status: 1,
-        filters: [{
-            id: 12,
-            name: '航班过滤器',
-            status: 0
-        }]
-    }, {
-        uri: '/institution-client/getInstitutionType',
-        status: 0,
-        filters: [{
-            id: 15,
-            name: '航班过滤器',
-            status: 0
-        }, {
-            id: 33,
-            name: 'MSDOWNLOAD过滤器',
-            status: 1
-        }]
-    }, {
-        uri: '/guest-permission/update-role-permission',
-        status: 1,
-        filters: [{
-            id: 45,
-            name: '航班过滤器',
-            status: 0
-        }]
-    }, {
-        uri: '/flight-info/get-flight-view',
-        status: 1,
-        filters: [{
-            id: 34,
-            name: '航班过滤器',
-            status: 0
-        }]
-    }]
 </script>
-
 </body>
 </html>

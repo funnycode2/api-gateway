@@ -7,6 +7,7 @@ import (
 	"gateway/src/goaway_example/web"
 	"strings"
 	"strconv"
+	"github.com/labstack/gommon/log"
 )
 
 type mysqlAppContext struct {
@@ -106,7 +107,7 @@ const PAGE_SIZE = 50
 func (a *mysqlAppContext) QueryService(
 	uri string,
 	desc string,
-	currentPage int) web.MResult {
+	currentPage int) *web.MResult {
 	hasUri := len(uri) > 0
 	hasDesc := len(desc) > 0
 	if !strings.HasPrefix(uri, "/") {
@@ -114,16 +115,16 @@ func (a *mysqlAppContext) QueryService(
 	}
 	var sqltext string
 	if !hasUri && !hasDesc {
-		sqltext = "select a.api_id as apiid, a.uri, a.`desc`, a.status from api a ORDER BY a.uri"
+		sqltext = "select a.api_id as Apiid, a.Uri, a.Status, a.`Desc` from api a ORDER BY a.uri"
 	}
 	if hasUri && hasDesc {
-		sqltext = "select a.api_id as apiid, a.uri, a.`desc`, a.status from api a where a.uri like '" + uri + "%' or a.`desc` like '%" + desc + "%' ORDER BY a.uri"
+		sqltext = "select a.api_id as Apiid, a.Uri, a.Status, a.`Desc` from api a where a.uri like '" + uri + "%' or a.`desc` like '%" + desc + "%' ORDER BY a.uri"
 	}
 	if hasUri && !hasDesc {
-		sqltext = "select a.api_id as apiid, a.uri, a.`desc`, a.status from api a where a.uri like '" + uri + "%' ORDER BY a.uri"
+		sqltext = "select a.api_id as Apiid, a.Uri, a.Status, a.`Desc` from api a where a.uri like '" + uri + "%' ORDER BY a.uri"
 	}
 	if !hasUri && hasDesc {
-		sqltext = "select a.api_id as apiid, a.uri, a.`desc`, a.status from api a where a.`desc` like '%" + desc + "%' ORDER BY a.uri"
+		sqltext = "select a.api_id as Apiid, a.Uri, a.Status, a.`Desc` from api a where a.`desc` like '%" + desc + "%' ORDER BY a.uri"
 	}
 
 	//查询总条数
@@ -134,16 +135,18 @@ func (a *mysqlAppContext) QueryService(
 		countRow.Scan(&mPage.TotalCount)
 	}
 
+	log.Info(sqltext)
+
 	//计算设置分页的参数
 	totalPage := (mPage.TotalCount + PAGE_SIZE - 1) / PAGE_SIZE
 	if totalPage < currentPage {
-		currentPage = totalPage - 1
+		currentPage = totalPage
 	}
-	if currentPage < 0 {
-		currentPage = 0
+	if currentPage < 1 {
+		currentPage = 1
 	}
-	mPage.CurrentPage = currentPage + 1
-	sqltext += " limit " + strconv.Itoa(currentPage * PAGE_SIZE) + ", " + strconv.Itoa(PAGE_SIZE)
+	mPage.CurrentPage = currentPage
+	sqltext += " limit " + strconv.Itoa((currentPage-1)*PAGE_SIZE) + ", " + strconv.Itoa(PAGE_SIZE)
 
 	//获取服务查询结果
 	rows, _ := a.db.Query(sqltext)
@@ -151,18 +154,18 @@ func (a *mysqlAppContext) QueryService(
 	var services []web.Mservice
 	for rows.Next() {
 		ms := web.Mservice{}
-		rows.Scan(&ms.Apiid, &ms.Uri, &ms.Desc, &ms.Status)
+		rows.Scan(&ms.Apiid, &ms.Uri, &ms.Status, &ms.Desc)
 		services = append(services, ms)
 	}
 
 	//关联过滤器
-	for _, service := range services {
-		rows, _ := a.db.Query("select a.filter_id as filterid, a.name, a.status from filter a where a.api_id = " + strconv.Itoa(service.Apiid))
+	for index, _ := range services {
+		rows, _ := a.db.Query("select a.filter_id as filterid, a.name, a.status from filter a where a.api_id = " + strconv.Itoa(services[index].Apiid))
 		defer rows.Close()
 		for rows.Next() {
 			mf := web.Mfilter{}
 			rows.Scan(&mf.Filterid, &mf.Name, &mf.Status)
-			service.Filters = append(service.Filters, mf)
+			services[index].Filters = append(services[index].Filters, mf)
 		}
 	}
 
@@ -170,5 +173,5 @@ func (a *mysqlAppContext) QueryService(
 	result.MPage = mPage
 	result.Mservicelist = services
 
-	return result
+	return &result
 }

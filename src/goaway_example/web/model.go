@@ -7,9 +7,9 @@ type MResult struct {
 
 type Mservice struct {
 	Apiid   int
-	Uri     string ``
-	Status  int
+	Uri     string
 	Desc    string
+	Status  int
 	Filters []Mfilter
 }
 
