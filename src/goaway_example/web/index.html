@@ -40,13 +40,14 @@
         </ul>
         <ul class="collapsible" data-collapsible="accordion">
             <li v-for="service in servicelist">
-                <div class="collapsible-header">
+                <div class="collapsible-header" :id="'item-'+service.Apiid" :class="{'grey': service.Status == 0}">
                     <i class="mdi-image-filter-drama"></i>
                     {{ service.Uri }}
                     <div class="switch">
                         <label>
                             Off
-                            <input type="checkbox" :checked="checked(service.Status)" @click="changeStatus(service)">
+                            <input type="checkbox" :checked="service.Status == 1 ? 'checked' : ''"
+                                   @click="changeStatus(service)">
                             <span class="lever"></span>
                             On
                         </label>
@@ -82,7 +83,8 @@
             searchText: '',
             pageTotal: 1,
             currentPage: 1,
-            TotalCount: 0
+            TotalCount: 0,
+            grey: false
         },
         methods: {
             checked: function (status) {
@@ -95,11 +97,8 @@
                 this.currentPage = page
             },
             changeStatus: function (service) {
-                if (service.Status === 1) {
-                    service.grey = 'grey'
-                } else {
-                    service.grey = ''
-                }
+                service.Status = service.Status === 1 ? 0 : 1
+                this.$forceUpdate()
             }
         },
         computed: {
@@ -123,7 +122,7 @@
                             _this.TotalCount = parseInt(data.TotalCount)
                         }
                     });
-                    return servicelist ? servicelist : {}
+                    return servicelist ? servicelist : []
                 }
             }
         }
