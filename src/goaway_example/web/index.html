@@ -7,15 +7,15 @@
     <link rel="stylesheet" href="dist/materialize.css" type="text/css"/>
 </head>
 <body>
-<div id="app">
+<div id="app" class="container">
     <nav>
         <div class="nav-wrapper">
-            <a href="#" class="brand-logo">Goaway Server Admin Page</a>
-            <ul id="nav-mobile" class="right hide-on-med-and-down">
+            <a href="#" class="brand-logo center">Goaway Server Admin Page</a>
+            <!--<ul id="nav-mobile" class="right hide-on-med-and-down">
                 <li><a href="badges">标签</a></li>
                 <li><a href="buttons">按钮</a></li>
                 <li><a href="footer">页脚</a></li>
-            </ul>
+            </ul>-->
         </div>
     </nav>
     <nav>
@@ -32,38 +32,54 @@
     </nav>
     <div v-show="servicelist">
         <ul class="pagination">
-            <li class="waves-effect">Total {{ TotalCount }}</li>
+            <div class="chip right">
+                Total {{ TotalCount }}
+            </div>
             <li v-for="index in pageTotal"
                 v-bind:class="{'active': index == currentPage, 'waves-effect': index != currentPage}"
             >
                 <a @click="changePage(index)">{{ index }}</a></li>
         </ul>
         <ul class="collapsible" data-collapsible="accordion">
-            <li v-for="service in servicelist">
-                <div class="collapsible-header" :id="'item-'+service.Apiid" :class="{'grey': service.Status == 0}">
+            <li v-for="(service, index) in servicelist">
+                <div class="collapsible-header" :id="'item-'+service.Apiid"
+                     :class="{'grey lighten-2': service.Status == 0}">
                     <i class="mdi-image-filter-drama"></i>
-                    {{ service.Uri }}
-                    <div class="switch">
+                    <span class="new badge left" data-badge-caption="save"
+                          v-show="editable(service)"></span>
+                    <span class="new badge left" data-badge-caption="cancel"
+                          v-show="editable(service)" @click="cancel(index)"></span>
+                    <span style="margin-left: 20px;">{{ service.Uri }}</span>
+                    <!--<span v-show="editable(service)" style="margin-left: 20px;">
+                        <input placeholder="uri" type="text" class="validate" :value="service.Uri">
+                    </span>-->
+                    <div class="switch right">
                         <label>
                             Off
                             <input type="checkbox" :checked="service.Status == 1 ? 'checked' : ''"
-                                   @click="changeStatus(service)">
+                                   @click="changeServiceStatus(service)">
                             <span class="lever"></span>
                             On
                         </label>
                     </div>
                 </div>
-                <div class="collapsible-body">
-                    <p v-for="filter in service.Filters">
-                        <input type="checkbox" class="filled-in" v-bind:id="filterId(filter.Filterid)"
-                               :checked="checked(filter.Status)"/>
-                        <label v-bind:for="filterId(filter.Filterid)">{{ filter.Name }}</label>
-                    </p>
+                <div class="collapsible-body" :class="{'grey lighten-2': service.Status == 0}"
+                    :style="{display: showBody(service)}">
+                    <div class="row" style="margin-left: 0; margin-bottom: 0">
+                        <p v-for="filter in service.Filters" class="left">
+                            <input type="checkbox" class="filled-in" v-bind:id="filterId(filter.Filterid)"
+                                   @click="changeFilterStatus(service, filter)"
+                                   :checked="checked(filter.Status)"/>
+                            <label v-bind:for="filterId(filter.Filterid)">{{ filter.Name }}</label>
+                        </p>
+                    </div>
                 </div>
             </li>
         </ul>
         <ul class="pagination">
-            <li class="waves-effect">Total {{ TotalCount }}</li>
+            <div class="chip right">
+                Total {{ TotalCount }}
+            </div>
             <li v-for="index in pageTotal"
                 v-bind:class="{'active': index == currentPage, 'waves-effect': index != currentPage}"
             >
@@ -84,7 +100,8 @@
             pageTotal: 1,
             currentPage: 1,
             TotalCount: 0,
-            grey: false
+            grey: false,
+            servicelistbackup: []
         },
         methods: {
             checked: function (status) {
@@ -96,9 +113,25 @@
             changePage: function (page) {
                 this.currentPage = page
             },
-            changeStatus: function (service) {
+            changeServiceStatus: function (service) {
                 service.Status = service.Status === 1 ? 0 : 1
+                service.editable = true
                 this.$forceUpdate()
+            },
+            changeFilterStatus: function (service, filter) {
+                filter.Status = filter.Status === 1 ? 0 : 1
+                service.editable = true
+                this.$forceUpdate()
+            },
+            editable: function (service) {
+                return !!service.editable
+            },
+            cancel: function (index) {
+                this.servicelist[index] = JSON.parse(JSON.stringify(this.servicelistbackup[index]))
+                this.$forceUpdate()
+            },
+            showBody: function (service) {
+                return service.Filters ? 'block' : 'none'
             }
         },
         computed: {
@@ -116,6 +149,7 @@
                         async: false,
                         success: function (data) {
                             servicelist = data.Mservicelist
+                            _this.servicelistbackup = JSON.parse(JSON.stringify(servicelist))
                             var totalCount = data.TotalCount;
                             _this.pageTotal = parseInt((totalCount + 50 - 1) / 50)
                             _this.currentPage = parseInt(data.CurrentPage)
