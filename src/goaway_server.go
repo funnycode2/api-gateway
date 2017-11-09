@@ -9,6 +9,7 @@ import (
 	"strings"
 	"strconv"
 	"gateway/src/goaway/constants"
+	"gateway/src/goaway_example/web"
 )
 
 const (
@@ -73,6 +74,14 @@ func (b *JsonFilter) DoFilter(
 		res.Header.SetBytesKV(constants.CONTENT_TYPE, []byte("application/json"))
 		json, _ := json.Marshal(*result)
 		res.SetBody(json)
+	}
+	if strings.HasPrefix(uri, "/admin/service/modify") {
+		var service web.Mservice
+		json.Unmarshal(req.Body(), &service)
+		if service.Apiid > 0 {
+			appContext.UpdateService(&service)
+		}
+		res.AppendBodyString("1")
 	}
 }
 

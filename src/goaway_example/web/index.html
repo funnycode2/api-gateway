@@ -11,11 +11,6 @@
     <nav>
         <div class="nav-wrapper">
             <a href="#" class="brand-logo center">Goaway Server Admin Page</a>
-            <!--<ul id="nav-mobile" class="right hide-on-med-and-down">
-                <li><a href="badges">标签</a></li>
-                <li><a href="buttons">按钮</a></li>
-                <li><a href="footer">页脚</a></li>
-            </ul>-->
         </div>
     </nav>
     <nav>
@@ -36,8 +31,7 @@
                 Total {{ TotalCount }}
             </div>
             <li v-for="index in pageTotal"
-                v-bind:class="{'active': index == currentPage, 'waves-effect': index != currentPage}"
-            >
+                v-bind:class="{'active': index == currentPage, 'waves-effect': index != currentPage}">
                 <a @click="changePage(index)">{{ index }}</a></li>
         </ul>
         <ul class="collapsible" data-collapsible="accordion">
@@ -46,13 +40,12 @@
                      :class="{'grey lighten-2': service.Status == 0}">
                     <i class="mdi-image-filter-drama"></i>
                     <span class="new badge left" data-badge-caption="save"
-                          v-show="editable(service)"></span>
+                          @click="save(service)"
+                          v-show="editable(service)">
+                    </span>
                     <span class="new badge left" data-badge-caption="cancel"
                           v-show="editable(service)" @click="cancel(index)"></span>
                     <span style="margin-left: 20px;">{{ service.Uri }}</span>
-                    <!--<span v-show="editable(service)" style="margin-left: 20px;">
-                        <input placeholder="uri" type="text" class="validate" :value="service.Uri">
-                    </span>-->
                     <div class="switch right">
                         <label>
                             Off
@@ -63,11 +56,13 @@
                         </label>
                     </div>
                 </div>
-                <div class="collapsible-body" :class="{'grey lighten-2': service.Status == 0}"
-                    :style="{display: showBody(service)}">
+                <div class="collapsible-body"
+                     :class="{'grey lighten-2': service.Status == 0}"
+                     :style="{display: showBody(service)}">
                     <div class="row" style="margin-left: 0; margin-bottom: 0">
                         <p v-for="filter in service.Filters" class="left">
-                            <input type="checkbox" class="filled-in" v-bind:id="filterId(filter.Filterid)"
+                            <input type="checkbox" class="filled-in"
+                                   v-bind:id="filterId(filter.Filterid)"
                                    @click="changeFilterStatus(service, filter)"
                                    :checked="checked(filter.Status)"/>
                             <label v-bind:for="filterId(filter.Filterid)">{{ filter.Name }}</label>
@@ -81,15 +76,9 @@
                 Total {{ TotalCount }}
             </div>
             <li v-for="index in pageTotal"
-                v-bind:class="{'active': index == currentPage, 'waves-effect': index != currentPage}"
-            >
+                v-bind:class="{'active': index == currentPage, 'waves-effect': index != currentPage}">
                 <a @click="changePage(index)">{{ index }}</a></li>
         </ul>
-    </div>
-    <div v-show="!servicelist">
-        <div class="chip">
-            no result found!
-        </div>
     </div>
 </div>
 <script>
@@ -132,6 +121,27 @@
             },
             showBody: function (service) {
                 return service.Filters ? 'block' : 'none'
+            },
+            save: function (service) {
+                var _vm = this
+                $.ajax({
+                    url: '/admin/service/modify',
+                    async: false,
+                    method: 'post',
+                    data: JSON.stringify(service),
+                    success: function (data) {
+                        if (parseInt(data) === 1) {
+                            service.editable = false
+                            _vm.$forceUpdate()
+                            Materialize.toast('sucess!', 1000)
+                        } else {
+                            Materialize.toast('failed!', 1500)
+                        }
+                    },
+                    error: function () {
+                        Materialize.toast('failed!', 1500)
+                    }
+                })
             }
         },
         computed: {

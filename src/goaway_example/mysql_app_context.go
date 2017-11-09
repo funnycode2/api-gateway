@@ -8,6 +8,7 @@ import (
 	"strings"
 	"strconv"
 	"github.com/labstack/gommon/log"
+	"fmt"
 )
 
 type mysqlAppContext struct {
@@ -51,6 +52,10 @@ const (
 		  left join filter c on c.api_id = a.api_id
 		where
 		  a.status = 1 and c.name is not null`
+	SQL3 = `
+		  update api set status = %d where api_id = %d`
+	SQL4 = `
+		  update filter set status = %d where filter_id = %d`
 )
 
 func (a *mysqlAppContext) VisitUriHosts(ctx *core.GaContext) {
@@ -174,4 +179,15 @@ func (a *mysqlAppContext) QueryService(
 	result.Mservicelist = services
 
 	return &result
+}
+
+func (a *mysqlAppContext) UpdateService(mservice *web.Mservice) {
+	_, e := a.db.Exec(fmt.Sprintf(SQL3, mservice.Status, mservice.Apiid))
+	log.Print(e)
+	mfilters := mservice.Filters
+	if len(mfilters) > 0 {
+		for _, fitler := range mfilters {
+			a.db.Exec(fmt.Sprintf(SQL4, fitler.Status, fitler.Filterid))
+		}
+	}
 }
