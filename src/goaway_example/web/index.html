@@ -1,10 +1,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <script type="text/javascript" src="dist/jquery-3.2.1.min.js"></script>
-    <script type="text/javascript" src="dist/materialize.js"></script>
-    <script type="text/javascript" src="dist/vue.js"></script>
-    <link rel="stylesheet" href="dist/materialize.css" type="text/css"/>
+    <link rel="stylesheet" href="dist/materialize.min.css"/>
 </head>
 <body>
 <div id="app" class="container">
@@ -34,7 +31,7 @@
                 v-bind:class="{'active': index == currentPage, 'waves-effect': index != currentPage}">
                 <a @click="changePage(index)">{{ index }}</a></li>
         </ul>
-        <ul class="collapsible" data-collapsible="accordion">
+        <ul class="collapsible popout" data-collapsible="accordion">
             <li v-for="(service, index) in servicelist">
                 <div class="collapsible-header" :id="'item-'+service.Apiid"
                      :class="{'grey lighten-2': service.Status == 0}">
@@ -59,14 +56,23 @@
                 <div class="collapsible-body"
                      :class="{'grey lighten-2': service.Status == 0}"
                      :style="{display: showBody(service)}">
-                    <div class="row" style="margin-left: 0; margin-bottom: 0">
-                        <p v-for="filter in service.Filters" class="left">
+                    <div class="row" style="margin-left: 0; margin-bottom: 0;">
+                        <p v-for="(filter, index) in service.Filters" class="left">
                             <input type="checkbox" class="filled-in"
                                    :disabled="service.Status == 0"
-                                   v-bind:id="'filter'+filter.Filterid"
-                                   @click="changeFilterStatus(service, filter)"
+                                   v-bind:id="'filter-'+filter.Filterid"
+                                   @click="changeFilterStatus(service, filter, index)"
                                    :checked="filter.Status == 1"/>
-                            <label v-bind:for="'filter'+filter.Filterid">{{ filter.Name }}</label>
+                            <label v-bind:for="'filter-'+filter.Filterid">{{ filter.Name }}</label>
+                        </p>
+                    </div>
+                    <div class="row" style="margin-left: 0; margin-bottom: 0;">
+                        <p v-for="filtername in leftFilter(allFilterNames, service.Filters)"
+                           @click="addFilter(service, filtername)"
+                           class="left">
+                            <input type="checkbox" class="filled-in"
+                                   disabled/>
+                            <label>{{ filtername }}</label>
                         </p>
                     </div>
                 </div>
@@ -82,18 +88,42 @@
         </ul>
     </div>
 </div>
+<script type="text/javascript" src="dist/jquery-3.2.1.min.js"></script>
+<script type="text/javascript" src="dist/materialize.js"></script>
+<script type="text/javascript" src="dist/vue.js"></script>
 <script>
     new Vue({
         el: '#app',
         data: {
+            forceReload: false,
             searchText: '',
             pageTotal: 1,
             currentPage: 1,
             TotalCount: 0,
             grey: false,
-            servicelistbackup: []
+            servicelistbackup: [],
+            allFilterNames: []
         },
         methods: {
+            addFilter: function (service, name) {
+                service.editable = true
+                service.Filters = service.Filters ? service.Filters : []
+                service.Filters.push({
+                    Name: name,
+                    Status: 1,
+                    Filterid: name + '-' + service.Apiid,
+                    New: true
+                })
+                this.$forceUpdate()
+            },
+            leftFilter: function (allfilternames, filters) {
+                names = (filters || []).map(function (value) {
+                    return value.Name
+                })
+                return allfilternames.filter(function (filter) {
+                    return $.inArray(filter, names) === -1
+                })
+            },
             changePage: function (page) {
                 this.currentPage = page
             },
@@ -102,10 +132,16 @@
                 service.editable = true
                 this.$forceUpdate()
             },
-            changeFilterStatus: function (service, filter) {
+            changeFilterStatus: function (service, filter, index) {
                 if (service.Status === 1) {
-                    filter.Status = filter.Status === 1 ? 0 : 1
-                    service.editable = true
+                    if (!filter.New) {
+                        //已经存在的过滤器, 直接修改状态
+                        filter.Status = filter.Status === 1 ? 0 : 1
+                        service.editable = true
+                    } else {
+                        //前台新添加的过滤器, 直接删除
+                        service.Filters.splice(index, 1)
+                    }
                     this.$forceUpdate()
                 }
             },
@@ -129,8 +165,9 @@
                     success: function (data) {
                         if (parseInt(data) === 1) {
                             service.editable = false
-                            _vm.$forceUpdate()
                             Materialize.toast('sucess!', 1000)
+                            _vm.forceReload = !_vm.forceReload
+
                         } else {
                             Materialize.toast('failed!', 1500)
                         }
@@ -145,6 +182,7 @@
             servicelist: {
                 get: function () {
                     var _this = this
+                    _this.forceReload = !_this.forceReload
                     var params = $.param({
                         prefix: _this.searchText,
                         desc: _this.searchText,
@@ -161,6 +199,7 @@
                             _this.pageTotal = parseInt((totalCount + 50 - 1) / 50)
                             _this.currentPage = parseInt(data.CurrentPage)
                             _this.TotalCount = parseInt(data.TotalCount)
+                            _this.allFilterNames = data.AllFilterNames
                         }
                     });
                     return servicelist ? servicelist : []

@@ -92,7 +92,11 @@ type StaticFileFilter struct {
 func (b *StaticFileFilter) Matches(uri string) bool {
 	return strings.HasSuffix(uri, ".html") ||
 		strings.HasSuffix(uri, ".js") ||
-		strings.HasSuffix(uri, ".css")
+		strings.HasSuffix(uri, ".css") ||
+		strings.HasSuffix(uri, ".eot") ||
+		strings.HasSuffix(uri, ".ttf") ||
+		strings.HasSuffix(uri, ".woff2") ||
+		strings.HasSuffix(uri, ".woff")
 }
 
 func (b *StaticFileFilter) DoFilter(
@@ -101,8 +105,16 @@ func (b *StaticFileFilter) DoFilter(
 	ctx *fasthttp.RequestCtx,
 	chain *core.FilterChain) {
 	uri := string(req.Header.RequestURI())
-	accept := string(req.Header.Peek("Accept"))
-	contentType := strings.Split(accept, ",")[0]
-	res.Header.SetBytesKV(constants.CONTENT_TYPE, []byte(contentType + ";UTF-8"))
+	if strings.HasSuffix(uri, ".ttf") {
+		res.Header.Set("Accept-Ranges", "bytes")
+		res.Header.SetBytesKV(constants.CONTENT_TYPE, []byte("font/ttf"))
+	} else if strings.HasSuffix(uri, ".woff2") {
+		res.Header.Set("Accept-Ranges", "bytes")
+		res.Header.SetBytesKV(constants.CONTENT_TYPE, []byte("font/woff2"))
+	} else {
+		accept := string(req.Header.Peek("Accept"))
+		contentType := strings.Split(accept, ",")[0]
+		res.Header.SetBytesKV(constants.CONTENT_TYPE, []byte(contentType + ";UTF-8"))
+	}
 	res.SendFile("src/goaway_example/web/" + uri)
 }

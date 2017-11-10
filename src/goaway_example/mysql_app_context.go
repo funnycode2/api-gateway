@@ -56,6 +56,10 @@ const (
 		  update api set status = %d where api_id = %d`
 	SQL4 = `
 		  update filter set status = %d where filter_id = %d`
+	SQL5 = `
+		  select distinct name from filter`
+	SQL6 = `
+		  insert into filter (api_id, name, status) values (%d, '%s', 1)`
 )
 
 func (a *mysqlAppContext) VisitUriHosts(ctx *core.GaContext) {
@@ -174,9 +178,20 @@ func (a *mysqlAppContext) QueryService(
 		}
 	}
 
+	//获取服务查询结果
+	rows0, _ := a.db.Query(SQL5)
+	defer rows0.Close()
+	var allFilterNames []string
+	for rows0.Next() {
+		var name string
+		rows0.Scan(&name)
+		allFilterNames = append(allFilterNames, name)
+	}
+
 	result := web.MResult{}
 	result.MPage = mPage
 	result.Mservicelist = services
+	result.AllFilterNames = &allFilterNames
 
 	return &result
 }
@@ -187,7 +202,14 @@ func (a *mysqlAppContext) UpdateService(mservice *web.Mservice) {
 	mfilters := mservice.Filters
 	if len(mfilters) > 0 {
 		for _, fitler := range mfilters {
-			a.db.Exec(fmt.Sprintf(SQL4, fitler.Status, fitler.Filterid))
+			if fitler.New {
+				//前台新添加的过滤器需要插入
+				a.db.Exec(fmt.Sprintf(SQL6, mservice.Apiid, fitler.Name))
+			} else {
+				//老的过滤器需要更新
+				a.db.Exec(fmt.Sprintf(SQL4, fitler.Status, fitler.Filterid))
+			}
+
 		}
 	}
 }
