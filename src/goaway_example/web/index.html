@@ -49,7 +49,7 @@
                     <div class="switch right">
                         <label>
                             Off
-                            <input type="checkbox" :checked="service.Status == 1 ? 'checked' : ''"
+                            <input type="checkbox" :checked="service.Status == 1"
                                    @click="changeServiceStatus(service)">
                             <span class="lever"></span>
                             On
@@ -62,10 +62,11 @@
                     <div class="row" style="margin-left: 0; margin-bottom: 0">
                         <p v-for="filter in service.Filters" class="left">
                             <input type="checkbox" class="filled-in"
-                                   v-bind:id="filterId(filter.Filterid)"
+                                   :disabled="service.Status == 0"
+                                   v-bind:id="'filter'+filter.Filterid"
                                    @click="changeFilterStatus(service, filter)"
-                                   :checked="checked(filter.Status)"/>
-                            <label v-bind:for="filterId(filter.Filterid)">{{ filter.Name }}</label>
+                                   :checked="filter.Status == 1"/>
+                            <label v-bind:for="'filter'+filter.Filterid">{{ filter.Name }}</label>
                         </p>
                     </div>
                 </div>
@@ -93,12 +94,6 @@
             servicelistbackup: []
         },
         methods: {
-            checked: function (status) {
-                return status === 1 ? 'checked' : ''
-            },
-            filterId: function (id) {
-                return 'filter-' + id
-            },
             changePage: function (page) {
                 this.currentPage = page
             },
@@ -108,9 +103,11 @@
                 this.$forceUpdate()
             },
             changeFilterStatus: function (service, filter) {
-                filter.Status = filter.Status === 1 ? 0 : 1
-                service.editable = true
-                this.$forceUpdate()
+                if (service.Status === 1) {
+                    filter.Status = filter.Status === 1 ? 0 : 1
+                    service.editable = true
+                    this.$forceUpdate()
+                }
             },
             editable: function (service) {
                 return !!service.editable
