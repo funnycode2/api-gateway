@@ -78,10 +78,12 @@ func (b *JsonFilter) DoFilter(
 	if strings.HasPrefix(uri, "/admin/service/modify") {
 		var service web.Mservice
 		json.Unmarshal(req.Body(), &service)
-		if service.Apiid > 0 {
-			appContext.UpdateService(&service)
+		err := appContext.UpdateService(&service)
+		if err != nil {
+			res.AppendBodyString("0")
+		} else {
+			res.AppendBodyString("1")
 		}
-		res.AppendBodyString("1")
 	}
 }
 
@@ -114,7 +116,7 @@ func (b *StaticFileFilter) DoFilter(
 	} else {
 		accept := string(req.Header.Peek("Accept"))
 		contentType := strings.Split(accept, ",")[0]
-		res.Header.SetBytesKV(constants.CONTENT_TYPE, []byte(contentType + ";UTF-8"))
+		res.Header.SetBytesKV(constants.CONTENT_TYPE, []byte(contentType+";UTF-8"))
 	}
 	res.SendFile("src/goaway_example/web/" + uri)
 }

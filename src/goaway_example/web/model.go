@@ -11,6 +11,7 @@ type Mservice struct {
 	Uri     string
 	Desc    string
 	Status  int
+	New     bool
 	Filters []Mfilter
 }
 

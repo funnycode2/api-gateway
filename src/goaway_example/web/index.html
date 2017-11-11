@@ -7,71 +7,114 @@
 <div id="app" class="container">
     <nav>
         <div class="nav-wrapper">
-            <a href="#" class="brand-logo center">Goaway Server Admin Page</a>
+            <a href="#" class="brand-logo center">Goaway Admin Page</a>
         </div>
     </nav>
     <nav>
         <div class="nav-wrapper">
             <form>
-                <div class="input-field">
-                    <input id="search" type="search" required v-model="searchText"
-                           placeholder="search for uri/description/filter name">
-                    <label for="search"><i class="mdi-action-search"></i></label>
-                    <i class="mdi-navigation-close"></i>
+                <div class="row">
+                    <div class="input-field col s12">
+                        <input id="search" type="search" required v-model="searchText"
+                               placeholder="search for uri/description/filter name">
+                        <a class="waves-effect waves-light btn right red lighten-2"
+                           style="margin-top: -70px; margin-right: 12px;"
+                           @click="addService()"
+                           v-show="searchText">
+                            ADD SERVICE
+                        </a>
+                        <label for="search"><i class="mdi-action-search"></i></label>
+                        <i class="mdi-navigation-close"></i>
+                    </div>
                 </div>
             </form>
         </div>
     </nav>
-    <div v-show="servicelist">
+    <div :style="{display: showResult()}">
         <ul class="pagination">
             <div class="chip right">
                 Total {{ TotalCount }}
             </div>
             <li v-for="index in pageTotal"
-                v-bind:class="{'active': index == currentPage, 'waves-effect': index != currentPage}">
+                :class="{'active': index == currentPage, 'waves-effect': index != currentPage}">
                 <a @click="changePage(index)">{{ index }}</a></li>
         </ul>
         <ul class="collapsible popout" data-collapsible="accordion">
             <li v-for="(service, index) in servicelist">
-                <div class="collapsible-header" :id="'item-'+service.Apiid"
+                <div :id="'item-'+service.Apiid" class="collapsible-header"
+                     @click="changeCurrentEdit(service)"
                      :class="{'grey lighten-2': service.Status == 0}">
                     <i class="mdi-image-filter-drama"></i>
-                    <span class="new badge left" data-badge-caption="save"
-                          @click="save(service)"
-                          v-show="editable(service)">
+                    <div class="chip teal white-text"
+                         @click="save(service)"
+                         v-show="service.operatable">
+                        save
+                    </div>
+                    <div class="chip white-text grey"
+                         v-show="service.operatable"
+                         @click="cancel(index)">
+                        cancel
+                    </div>
+                    <div class="chip edit-btn teal lighten-2 white-text"
+                         style="margin-right: -10px;"
+                         @click="setEditable(service)"
+                         v-show="!service.editable && service === currentEditService && (service.Status === 1)">
+                        edit
+                    </div>
+                    <span style="margin-left: 20px;"
+                          v-show="!service.editable"
+                          :class="{'grey-text': !service.editable}">
+                        {{ service.Uri }}
                     </span>
-                    <span class="new badge left" data-badge-caption="cancel"
-                          v-show="editable(service)" @click="cancel(index)"></span>
-                    <span style="margin-left: 20px;">{{ service.Uri }}</span>
-                    <div class="switch right">
+                    <span style="margin-left: 20px;"
+                          v-show="service.editable">
+                        <input type="text" v-model="service.Uri"
+                               style="width: 200px; height: 25px; font-size: 20px; margin-bottom: 0;"
+                               placeholder="uri">
+                    </span>
+                    <div class="switch right" style="margin-left: 15px;">
                         <label>
                             Off
-                            <input type="checkbox" :checked="service.Status == 1"
+                            <input type="checkbox"
+                                   :checked="service.Status == 1"
                                    @click="changeServiceStatus(service)">
                             <span class="lever"></span>
                             On
                         </label>
                     </div>
+                    <span class="right right-align"
+                          style="width: 200px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;"
+                          v-show="!service.editable"
+                          :class="{'grey-text': !service.editable}"
+                          :title="service.Desc">
+                        {{ service.Desc }}
+                    </span>
+                    <span class="right right-align"
+                          style="margin-left: 20px;"
+                          v-show="service.editable">
+                        <input type="text" v-model="service.Desc"
+                               style="width: 200px; height: 25px; font-size: 16px; margin-bottom: 0; margin-top: 8.8px;"
+                               placeholder="add description">
+                    </span>
                 </div>
                 <div class="collapsible-body"
                      :class="{'grey lighten-2': service.Status == 0}"
                      :style="{display: showBody(service)}">
                     <div class="row" style="margin-left: 0; margin-bottom: 0;">
                         <p v-for="(filter, index) in service.Filters" class="left">
-                            <input type="checkbox" class="filled-in"
+                            <input :id="'filter-'+filter.Filterid"
+                                   type="checkbox" class="filled-in"
                                    :disabled="service.Status == 0"
-                                   v-bind:id="'filter-'+filter.Filterid"
                                    @click="changeFilterStatus(service, filter, index)"
                                    :checked="filter.Status == 1"/>
-                            <label v-bind:for="'filter-'+filter.Filterid">{{ filter.Name }}</label>
+                            <label :for="'filter-'+filter.Filterid">{{ filter.Name }}</label>
                         </p>
                     </div>
                     <div class="row" style="margin-left: 0; margin-bottom: 0;">
                         <p v-for="filtername in leftFilter(allFilterNames, service.Filters)"
                            @click="addFilter(service, filtername)"
                            class="left">
-                            <input type="checkbox" class="filled-in"
-                                   disabled/>
+                            <input type="checkbox" class="filled-in" disabled/>
                             <label>{{ filtername }}</label>
                         </p>
                     </div>
@@ -83,8 +126,17 @@
                 Total {{ TotalCount }}
             </div>
             <li v-for="index in pageTotal"
-                v-bind:class="{'active': index == currentPage, 'waves-effect': index != currentPage}">
+                :class="{'active': index == currentPage, 'waves-effect': index != currentPage}">
                 <a @click="changePage(index)">{{ index }}</a></li>
+        </ul>
+    </div>
+    <div :style="{display: showNoResult()}">
+        <ul class="collapsible" data-collapsible="accordion">
+            <li>
+                <div class="collapsible-header">
+                    <span style="font-size: large;">No results found!</span>
+                </div>
+            </li>
         </ul>
     </div>
 </div>
@@ -95,26 +147,68 @@
     new Vue({
         el: '#app',
         data: {
+            currentEditService: {},
             forceReload: false,
             searchText: '',
-            pageTotal: 1,
             currentPage: 1,
             TotalCount: 0,
-            grey: false,
             servicelistbackup: [],
             allFilterNames: []
         },
         methods: {
-            addFilter: function (service, name) {
+            setEditable: function (service) {
                 service.editable = true
-                service.Filters = service.Filters ? service.Filters : []
-                service.Filters.push({
-                    Name: name,
-                    Status: 1,
-                    Filterid: name + '-' + service.Apiid,
-                    New: true
-                })
+                service.operatable = true
                 this.$forceUpdate()
+            },
+            //显示edit或隐藏edit
+            changeCurrentEdit: function (service) {
+                this.currentEditService = service
+            },
+            addService: function () {
+                var uri = this.searchText;
+                if (!uri || uri.trim() === '') {
+                    Materialize.toast('empty uri!', 1000)
+                    return
+                }
+                uri = uri.charAt(0) !== '/' ? '/' + uri : uri
+                this.servicelist = this.servicelist ? this.servicelist : []
+                var uris = this.servicelist.map(function (value) {
+                    return value.Uri
+                })
+                if ($.inArray(uri, uris) !== -1) {
+                    Materialize.toast('uri exists!', 1000)
+                    return
+                }
+                this.servicelist.splice(0, 0, {
+                    New: true,
+                    Uri: uri,
+                    Status: 1,
+                    editable: true
+                })
+                this.TotalCount = this.TotalCount + 1
+            },
+            showNoResult: function () {
+                return this.servicelist && this.servicelist.length > 0 ? 'none' : ''
+            },
+            showResult: function () {
+                return this.servicelist && this.servicelist.length > 0 ? '' : 'none'
+            },
+            deepCopy: function (target) {
+                return JSON.parse(JSON.stringify(target))
+            },
+            addFilter: function (service, name) {
+                if (service.Status === 1) {
+                    service.editable = true
+                    service.Filters = service.Filters ? service.Filters : []
+                    service.Filters.push({
+                        Name: name,
+                        Status: 1,
+                        Filterid: [name, service.Apiid].join('-'),
+                        New: true
+                    })
+                    this.$forceUpdate()
+                }
             },
             leftFilter: function (allfilternames, filters) {
                 names = (filters || []).map(function (value) {
@@ -129,11 +223,13 @@
             },
             changeServiceStatus: function (service) {
                 service.Status = service.Status === 1 ? 0 : 1
-                service.editable = true
+                service.editable = service.Status === 1
+                service.operatable = true
                 this.$forceUpdate()
             },
             changeFilterStatus: function (service, filter, index) {
                 if (service.Status === 1) {
+                    service.operatable = true
                     if (!filter.New) {
                         //已经存在的过滤器, 直接修改状态
                         filter.Status = filter.Status === 1 ? 0 : 1
@@ -142,14 +238,17 @@
                         //前台新添加的过滤器, 直接删除
                         service.Filters.splice(index, 1)
                     }
+                    service.operatable = true
                     this.$forceUpdate()
                 }
             },
-            editable: function (service) {
-                return !!service.editable
-            },
             cancel: function (index) {
-                this.servicelist[index] = JSON.parse(JSON.stringify(this.servicelistbackup[index]))
+                if (this.servicelist[index] && !this.servicelist[index].New) {
+                    this.servicelist[index] = this.deepCopy(this.servicelistbackup[index])
+                } else {
+                    this.servicelist.splice(index, 1)
+                }
+                this.servicelist[index].operatable = false
                 this.$forceUpdate()
             },
             showBody: function (service) {
@@ -163,11 +262,11 @@
                     method: 'post',
                     data: JSON.stringify(service),
                     success: function (data) {
+                        service.operatable = false
                         if (parseInt(data) === 1) {
                             service.editable = false
-                            Materialize.toast('sucess!', 1000)
+                            Materialize.toast('success!', 1000)
                             _vm.forceReload = !_vm.forceReload
-
                         } else {
                             Materialize.toast('failed!', 1500)
                         }
@@ -179,14 +278,18 @@
             }
         },
         computed: {
+            pageTotal: function () {
+                var vm = this
+                return parseInt((vm.TotalCount + 49) / 50)
+            },
             servicelist: {
                 get: function () {
-                    var _this = this
-                    _this.forceReload = !_this.forceReload
+                    var vm = this
+                    vm.forceReload = !vm.forceReload
                     var params = $.param({
-                        prefix: _this.searchText,
-                        desc: _this.searchText,
-                        currentpage: _this.currentPage
+                        prefix: vm.searchText,
+                        desc: vm.searchText,
+                        currentpage: vm.currentPage
                     })
                     var servicelist
                     $.ajax({
@@ -194,19 +297,28 @@
                         async: false,
                         success: function (data) {
                             servicelist = data.Mservicelist
-                            _this.servicelistbackup = JSON.parse(JSON.stringify(servicelist))
+                            //保存原始的数据, 以供取消操作使用
+                            vm.servicelistbackup = vm.deepCopy(servicelist)
                             var totalCount = data.TotalCount;
-                            _this.pageTotal = parseInt((totalCount + 50 - 1) / 50)
-                            _this.currentPage = parseInt(data.CurrentPage)
-                            _this.TotalCount = parseInt(data.TotalCount)
-                            _this.allFilterNames = data.AllFilterNames
+                            vm.currentPage = parseInt(data.CurrentPage)
+                            vm.TotalCount = parseInt(data.TotalCount)
+                            vm.allFilterNames = data.AllFilterNames
                         }
                     });
                     return servicelist ? servicelist : []
+                },
+                set: function (nv) {
+                    console.log(nv)
                 }
             }
         }
     })
 </script>
+<style>
+    .chip {
+        height: 25px;
+        line-height: 25px;
+    }
+</style>
 </body>
 </html>

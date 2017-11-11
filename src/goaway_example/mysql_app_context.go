@@ -5,10 +5,10 @@ import (
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"gateway/src/goaway_example/web"
-	"strings"
 	"strconv"
 	"github.com/labstack/gommon/log"
 	"fmt"
+	"errors"
 )
 
 type mysqlAppContext struct {
@@ -53,13 +53,19 @@ const (
 		where
 		  a.status = 1 and c.name is not null`
 	SQL3 = `
-		  update api set status = %d where api_id = %d`
+		  update api set status = %d, uri = '%s', display_name = '%s' where api_id = %d`
 	SQL4 = `
 		  update filter set status = %d where filter_id = %d`
 	SQL5 = `
 		  select distinct name from filter`
 	SQL6 = `
-		  insert into filter (api_id, name, status) values (%d, '%s', 1)`
+		  insert into filter (api_id, desc, status) values (%d, '%s', 1)`
+	SQL7 = `
+		  select count(0) from api where uri = '%s'`
+	SQL8 = `
+		  insert into api (display_name, uri, status) values ('%s', '%s', 1)`
+	SQL9 = `
+		  select api_id from api where uri = '%s'`
 )
 
 func (a *mysqlAppContext) VisitUriHosts(ctx *core.GaContext) {
@@ -119,21 +125,18 @@ func (a *mysqlAppContext) QueryService(
 	currentPage int) *web.MResult {
 	hasUri := len(uri) > 0
 	hasDesc := len(desc) > 0
-	if !strings.HasPrefix(uri, "/") {
-		uri = "/" + uri
-	}
 	var sqltext string
 	if !hasUri && !hasDesc {
-		sqltext = "select a.api_id as Apiid, a.Uri, a.Status, a.`Desc` from api a ORDER BY a.uri"
+		sqltext = "select a.api_id as Apiid, a.Uri, a.Status, a.display_name as `Desc` from api a ORDER BY a.uri"
 	}
 	if hasUri && hasDesc {
-		sqltext = "select a.api_id as Apiid, a.Uri, a.Status, a.`Desc` from api a where a.uri like '" + uri + "%' or a.`desc` like '%" + desc + "%' ORDER BY a.uri"
+		sqltext = "select a.api_id as Apiid, a.Uri, a.Status, a.display_name as `Desc` from api a where a.uri like '%" + uri + "%' or a.display_name like '%" + desc + "%' ORDER BY a.uri"
 	}
 	if hasUri && !hasDesc {
-		sqltext = "select a.api_id as Apiid, a.Uri, a.Status, a.`Desc` from api a where a.uri like '" + uri + "%' ORDER BY a.uri"
+		sqltext = "select a.api_id as Apiid, a.Uri, a.Status, a.display_name as `Desc` from api a where a.uri like '%" + uri + "%' ORDER BY a.uri"
 	}
 	if !hasUri && hasDesc {
-		sqltext = "select a.api_id as Apiid, a.Uri, a.Status, a.`Desc` from api a where a.`desc` like '%" + desc + "%' ORDER BY a.uri"
+		sqltext = "select a.api_id as Apiid, a.Uri, a.Status, a.display_name as `Desc` from api a where a.display_name like '%" + desc + "%' ORDER BY a.uri"
 	}
 
 	//查询总条数
@@ -196,9 +199,31 @@ func (a *mysqlAppContext) QueryService(
 	return &result
 }
 
-func (a *mysqlAppContext) UpdateService(mservice *web.Mservice) {
-	_, e := a.db.Exec(fmt.Sprintf(SQL3, mservice.Status, mservice.Apiid))
-	log.Print(e)
+func (a *mysqlAppContext) UpdateService(mservice *web.Mservice) error {
+	if mservice.New {
+		//如果是新的, 则需要插入, 并在插入前需要校验是否重复
+		var uriCount int
+		rows, _ := a.db.Query(fmt.Sprintf(SQL7, mservice.Uri))
+		defer rows.Close()
+		for rows.Next() {
+			rows.Scan(&uriCount)
+		}
+		if uriCount > 0 {
+			return errors.New("uri already exists")
+		}
+		a.db.Exec(fmt.Sprintf(SQL8, mservice.Desc, mservice.Uri))
+		rows0, _ := a.db.Query(fmt.Sprintf(SQL9, mservice.Uri))
+		defer rows0.Close()
+		if rows0.Next() {
+			rows0.Scan(&mservice.Apiid)
+		} else {
+			return errors.New("no uri = " + mservice.Uri + " found")
+		}
+	} else {
+		//执行修改
+		a.db.Exec(fmt.Sprintf(SQL3, mservice.Status, mservice.Uri, mservice.Desc, mservice.Apiid))
+	}
+
 	mfilters := mservice.Filters
 	if len(mfilters) > 0 {
 		for _, fitler := range mfilters {
@@ -212,4 +237,5 @@ func (a *mysqlAppContext) UpdateService(mservice *web.Mservice) {
 
 		}
 	}
+	return nil
 }
