@@ -4,15 +4,23 @@ type MResult struct {
 	MPage
 	Mservicelist   []Mservice
 	AllFilterNames *[]string //所有的过滤器名称
+	AllHosts       *[]Mhost
 }
 
 type Mservice struct {
+	Mhost
 	Apiid   int
 	Uri     string
 	Desc    string
 	Status  int
 	New     bool
 	Filters []Mfilter
+}
+
+type Mhost struct {
+	ServiceId int
+	Name      string
+	Port      int
 }
 
 type Mfilter struct {

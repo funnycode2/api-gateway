@@ -53,19 +53,22 @@ const (
 		where
 		  a.status = 1 and c.name is not null`
 	SQL3 = `
-		  update api set status = %d, uri = '%s', display_name = '%s' where api_id = %d`
+		  update api set status = %d, uri = '%s', display_name = '%s', service_id = %d where api_id = %d`
 	SQL4 = `
 		  update filter set status = %d where filter_id = %d`
 	SQL5 = `
 		  select distinct name from filter`
 	SQL6 = `
-		  insert into filter (api_id, desc, status) values (%d, '%s', 1)`
+		  insert into filter (api_id, name, status) values (%d, '%s', 1)`
 	SQL7 = `
 		  select count(0) from api where uri = '%s'`
 	SQL8 = `
-		  insert into api (display_name, uri, status) values ('%s', '%s', 1)`
+		  insert into api (display_name, uri, service_id, status) values ('%s', '%s', %d, 1)`
 	SQL9 = `
 		  select api_id from api where uri = '%s'`
+	SQL10 = `
+		select s.service_id as ServiceId, s.name, s.port
+		from service s ORDER by s.name, s.port`
 )
 
 func (a *mysqlAppContext) VisitUriHosts(ctx *core.GaContext) {
@@ -119,6 +122,8 @@ func (a *mysqlAppContext) queryUriFilters() []uriFilter {
 
 const PAGE_SIZE = 50
 
+const SELECT0 = "select a.api_id as Apiid, a.Uri, a.Status, a.display_name as `Desc`, a.service_id as ServiceId, s.Name, s.Port from api a left join service s on a.service_id = s.service_id "
+
 func (a *mysqlAppContext) QueryService(
 	uri string,
 	desc string,
@@ -126,17 +131,18 @@ func (a *mysqlAppContext) QueryService(
 	hasUri := len(uri) > 0
 	hasDesc := len(desc) > 0
 	var sqltext string
+
 	if !hasUri && !hasDesc {
-		sqltext = "select a.api_id as Apiid, a.Uri, a.Status, a.display_name as `Desc` from api a ORDER BY a.uri"
+		sqltext = SELECT0 + "ORDER BY a.uri"
 	}
 	if hasUri && hasDesc {
-		sqltext = "select a.api_id as Apiid, a.Uri, a.Status, a.display_name as `Desc` from api a where a.uri like '%" + uri + "%' or a.display_name like '%" + desc + "%' ORDER BY a.uri"
+		sqltext = SELECT0 + "where a.uri like '%" + uri + "%' or a.display_name like '%" + desc + "%' ORDER BY a.uri"
 	}
 	if hasUri && !hasDesc {
-		sqltext = "select a.api_id as Apiid, a.Uri, a.Status, a.display_name as `Desc` from api a where a.uri like '%" + uri + "%' ORDER BY a.uri"
+		sqltext = SELECT0 + "where a.uri like '%" + uri + "%' ORDER BY a.uri"
 	}
 	if !hasUri && hasDesc {
-		sqltext = "select a.api_id as Apiid, a.Uri, a.Status, a.display_name as `Desc` from api a where a.display_name like '%" + desc + "%' ORDER BY a.uri"
+		sqltext = SELECT0 + "where a.display_name like '%" + desc + "%' ORDER BY a.uri"
 	}
 
 	//查询总条数
@@ -166,7 +172,7 @@ func (a *mysqlAppContext) QueryService(
 	var services []web.Mservice
 	for rows.Next() {
 		ms := web.Mservice{}
-		rows.Scan(&ms.Apiid, &ms.Uri, &ms.Status, &ms.Desc)
+		rows.Scan(&ms.Apiid, &ms.Uri, &ms.Status, &ms.Desc, &ms.ServiceId, &ms.Name, &ms.Port)
 		services = append(services, ms)
 	}
 
@@ -191,10 +197,20 @@ func (a *mysqlAppContext) QueryService(
 		allFilterNames = append(allFilterNames, name)
 	}
 
+	rows1, _ := a.db.Query(SQL10)
+	defer rows1.Close()
+	var allHosts []web.Mhost
+	for rows1.Next() {
+		var host web.Mhost
+		rows1.Scan(&host.ServiceId, &host.Name, &host.Port)
+		allHosts = append(allHosts, host)
+	}
+
 	result := web.MResult{}
 	result.MPage = mPage
 	result.Mservicelist = services
 	result.AllFilterNames = &allFilterNames
+	result.AllHosts = &allHosts
 
 	return &result
 }
@@ -211,7 +227,7 @@ func (a *mysqlAppContext) UpdateService(mservice *web.Mservice) error {
 		if uriCount > 0 {
 			return errors.New("uri already exists")
 		}
-		a.db.Exec(fmt.Sprintf(SQL8, mservice.Desc, mservice.Uri))
+		a.db.Exec(fmt.Sprintf(SQL8, mservice.Desc, mservice.Uri, mservice.ServiceId))
 		rows0, _ := a.db.Query(fmt.Sprintf(SQL9, mservice.Uri))
 		defer rows0.Close()
 		if rows0.Next() {
@@ -221,7 +237,7 @@ func (a *mysqlAppContext) UpdateService(mservice *web.Mservice) error {
 		}
 	} else {
 		//执行修改
-		a.db.Exec(fmt.Sprintf(SQL3, mservice.Status, mservice.Uri, mservice.Desc, mservice.Apiid))
+		a.db.Exec(fmt.Sprintf(SQL3, mservice.Status, mservice.Uri, mservice.Desc, mservice.ServiceId, mservice.Apiid))
 	}
 
 	mfilters := mservice.Filters

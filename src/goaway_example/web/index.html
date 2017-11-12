@@ -7,7 +7,12 @@
 <div id="app" class="container">
     <nav>
         <div class="nav-wrapper">
-            <a href="#" class="brand-logo center">Goaway Admin Page</a>
+            <a href="#!" class="brand-logo">Goaway Admin Page</a>
+            <a class="waves-effect waves-light btn right"
+               style="margin-top: 14px; margin-right: 15px;"
+               @click="reloadServer()">
+                RELOAD SERVER
+            </a>
         </div>
     </nav>
     <nav>
@@ -62,15 +67,8 @@
                         edit
                     </div>
                     <span style="margin-left: 20px;"
-                          v-show="!service.editable"
                           :class="{'grey-text': !service.editable}">
                         {{ service.Uri }}
-                    </span>
-                    <span style="margin-left: 20px;"
-                          v-show="service.editable">
-                        <input type="text" v-model="service.Uri"
-                               style="width: 200px; height: 25px; font-size: 20px; margin-bottom: 0;"
-                               placeholder="uri">
                     </span>
                     <div class="switch right" style="margin-left: 15px;">
                         <label>
@@ -84,27 +82,42 @@
                     </div>
                     <span class="right right-align"
                           style="width: 200px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;"
-                          v-show="!service.editable"
                           :class="{'grey-text': !service.editable}"
                           :title="service.Desc">
                         {{ service.Desc }}
-                    </span>
-                    <span class="right right-align"
-                          style="margin-left: 20px;"
-                          v-show="service.editable">
-                        <input type="text" v-model="service.Desc"
-                               style="width: 200px; height: 25px; font-size: 16px; margin-bottom: 0; margin-top: 8.8px;"
-                               placeholder="add description">
                     </span>
                 </div>
                 <div class="collapsible-body"
                      :class="{'grey lighten-2': service.Status == 0}"
                      :style="{display: showBody(service)}">
+                    <div class="row" v-show="service.editable"
+                         style="margin: 10px 30px -40px;">
+                        <div class="input-field col s8">
+                            <input v-model="service.Uri" id="first_name" type="text" class="validate">
+                            <label for="first_name">URI</label>
+                        </div>
+                        <div class="input-field col s4">
+                            <input v-model="service.Desc" id="last_name" type="text" class="validate">
+                            <label for="last_name">DESCRIPTION</label>
+                        </div>
+                    </div>
+                    <div class="row" style="margin-bottom: 0px;">
+                        <p class="left" v-for="host in allHosts">
+                            <input :name="'host-'+service.Apiid" type="radio"
+                                   :id="service.Apiid+'-'+host.ServiceId"
+                                   :disabled="!service.editable"
+                                   :checked="host.ServiceId == service.ServiceId"
+                                   @click="changeService(service, host.ServiceId)"/>
+                            <label :for="service.Apiid+'-'+host.ServiceId">
+                                {{ host.Name + ':' + host.Port }}
+                            </label>
+                        </p>
+                    </div>
                     <div class="row" style="margin-left: 0; margin-bottom: 0;">
                         <p v-for="(filter, index) in service.Filters" class="left">
                             <input :id="'filter-'+filter.Filterid"
                                    type="checkbox" class="filled-in"
-                                   :disabled="service.Status == 0"
+                                   :disabled="service.Status == 0 || !service.editable"
                                    @click="changeFilterStatus(service, filter, index)"
                                    :checked="filter.Status == 1"/>
                             <label :for="'filter-'+filter.Filterid">{{ filter.Name }}</label>
@@ -114,7 +127,8 @@
                         <p v-for="filtername in leftFilter(allFilterNames, service.Filters)"
                            @click="addFilter(service, filtername)"
                            class="left">
-                            <input type="checkbox" class="filled-in" disabled/>
+                            <input type="checkbox" class="filled-in"
+                                   :disabled="service.Status == 0 || !service.editable"/>
                             <label>{{ filtername }}</label>
                         </p>
                     </div>
@@ -153,9 +167,30 @@
             currentPage: 1,
             TotalCount: 0,
             servicelistbackup: [],
-            allFilterNames: []
+            allFilterNames: [],
+            allHosts: []
         },
         methods: {
+            reloadServer: function () {
+                var reload = confirm('reload server?');
+                if (reload) {
+                    $.ajax({
+                        url: '/admin/service/reload',
+                        async: false,
+                        success: function (data) {
+                            var code = parseInt(data)
+                            if (code === 1) {
+                                Materialize.toast('reload success!', 1000)
+                            } else {
+                                Materialize.toast('fail to reload!', 1000)
+                            }
+                        },
+                        error: function () {
+                            Materialize.toast('fail to reload!', 1000)
+                        }
+                    })
+                }
+            },
             setEditable: function (service) {
                 service.editable = true
                 service.operatable = true
@@ -184,7 +219,8 @@
                     New: true,
                     Uri: uri,
                     Status: 1,
-                    editable: true
+                    editable: true,
+                    operatable: true
                 })
                 this.TotalCount = this.TotalCount + 1
             },
@@ -198,8 +234,9 @@
                 return JSON.parse(JSON.stringify(target))
             },
             addFilter: function (service, name) {
-                if (service.Status === 1) {
+                if (service.Status === 1 && service.editable) {
                     service.editable = true
+                    service.operatable = true
                     service.Filters = service.Filters ? service.Filters : []
                     service.Filters.push({
                         Name: name,
@@ -221,6 +258,13 @@
             changePage: function (page) {
                 this.currentPage = page
             },
+            changeService: function (service, serviceId) {
+                if (service.Status === 1 && service.editable) {
+                    service.operatable = true
+                    service.ServiceId = serviceId
+                    this.$forceUpdate()
+                }
+            },
             changeServiceStatus: function (service) {
                 service.Status = service.Status === 1 ? 0 : 1
                 service.editable = service.Status === 1
@@ -228,7 +272,7 @@
                 this.$forceUpdate()
             },
             changeFilterStatus: function (service, filter, index) {
-                if (service.Status === 1) {
+                if (service.Status === 1 && service.editable) {
                     service.operatable = true
                     if (!filter.New) {
                         //已经存在的过滤器, 直接修改状态
@@ -303,6 +347,7 @@
                             vm.currentPage = parseInt(data.CurrentPage)
                             vm.TotalCount = parseInt(data.TotalCount)
                             vm.allFilterNames = data.AllFilterNames
+                            vm.allHosts = data.AllHosts
                         }
                     });
                     return servicelist ? servicelist : []

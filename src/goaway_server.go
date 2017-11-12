@@ -18,17 +18,23 @@ const (
 
 var (
 	appContext = ex.NewMqlAppContext()
+	reloadChan = make(chan int)
 )
 
 func main() {
 	wg := &sync.WaitGroup{}
-	gaContext := core.NewContext()
-	appContext := ex.NewMqlAppContext()
-	appContext.VisitUriHosts(gaContext)
-	appContext.VisitUriFilters(gaContext)
+	gaContext := loadContext()
 	gaServer := core.NewGaServer(port, gaContext)
 	//LoadContext用于热配置
 	wg.Add(1)
+	go func() {
+		for {
+			signal := <-reloadChan
+			if signal == 1 {
+				gaServer.LoadContext(loadContext())
+			}
+		}
+	}()
 	go func() {
 		gaServer.Start()
 		wg.Done()
@@ -46,6 +52,13 @@ func startWebServer() {
 	context.LoadFilter(&JsonFilter{})
 	server := core.NewGaServer(9999, context)
 	server.Start()
+}
+
+func loadContext() *core.GaContext {
+	gaContext := core.NewContext()
+	appContext.VisitUriHosts(gaContext)
+	appContext.VisitUriFilters(gaContext)
+	return gaContext
 }
 
 type JsonFilter struct {
@@ -84,6 +97,10 @@ func (b *JsonFilter) DoFilter(
 		} else {
 			res.AppendBodyString("1")
 		}
+	}
+	if strings.HasPrefix(uri, "/admin/service/reload") {
+		reloadChan <- 1
+		res.AppendBodyString("1")
 	}
 }
 
