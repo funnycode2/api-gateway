@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"gateway/src/goaway_example/web"
+	s "gateway/src/goaway_example/web/sql"
 	"strconv"
-	"github.com/labstack/gommon/log"
 	"fmt"
 	"errors"
 )
@@ -52,8 +52,6 @@ const (
 		  left join filter c on c.api_id = a.api_id
 		where
 		  a.status = 1 and c.name is not null`
-	SQL3 = `
-		  update api set status = %d, uri = '%s', display_name = '%s', service_id = %d where api_id = %d`
 	SQL4 = `
 		  update filter set status = %d where filter_id = %d`
 	SQL5 = `
@@ -122,38 +120,24 @@ func (a *mysqlAppContext) queryUriFilters() []uriFilter {
 
 const PAGE_SIZE = 50
 
-const SELECT0 = "select a.api_id as Apiid, a.Uri, a.Status, a.display_name as `Desc`, a.service_id as ServiceId, s.Name, s.Port from api a left join service s on a.service_id = s.service_id "
-
 func (a *mysqlAppContext) QueryService(
 	uri string,
 	desc string,
 	currentPage int) *web.MResult {
-	hasUri := len(uri) > 0
-	hasDesc := len(desc) > 0
-	var sqltext string
 
-	if !hasUri && !hasDesc {
-		sqltext = SELECT0 + "ORDER BY a.uri"
-	}
-	if hasUri && hasDesc {
-		sqltext = SELECT0 + "where a.uri like '%" + uri + "%' or a.display_name like '%" + desc + "%' ORDER BY a.uri"
-	}
-	if hasUri && !hasDesc {
-		sqltext = SELECT0 + "where a.uri like '%" + uri + "%' ORDER BY a.uri"
-	}
-	if !hasUri && hasDesc {
-		sqltext = SELECT0 + "where a.display_name like '%" + desc + "%' ORDER BY a.uri"
-	}
+	sqltext := s.NewSql(s.SELECT0, &web.Mservice{
+		Uri:  uri,
+		Desc: desc,
+	})
 
 	//查询总条数
-	countRow, _ := a.db.Query("select count(0) from (" + sqltext + ") t")
+	countSql := fmt.Sprintf("select count(0) from (%s) t", sqltext)
+	countRow, _ := a.db.Query(countSql)
 	defer countRow.Close()
 	mPage := web.MPage{}
 	if countRow.Next() {
 		countRow.Scan(&mPage.TotalCount)
 	}
-
-	log.Info(sqltext)
 
 	//计算设置分页的参数
 	totalPage := (mPage.TotalCount + PAGE_SIZE - 1) / PAGE_SIZE
@@ -237,7 +221,8 @@ func (a *mysqlAppContext) UpdateService(mservice *web.Mservice) error {
 		}
 	} else {
 		//执行修改
-		a.db.Exec(fmt.Sprintf(SQL3, mservice.Status, mservice.Uri, mservice.Desc, mservice.ServiceId, mservice.Apiid))
+		update := s.NewSql(s.UPDATE0, mservice)
+		a.db.Exec(update)
 	}
 
 	mfilters := mservice.Filters

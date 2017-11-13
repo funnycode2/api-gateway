@@ -2,23 +2,31 @@ package main
 
 import (
 	"gateway/src/goaway_example/web"
-	"encoding/json"
+	"bytes"
+	"text/template"
+	t "text/template"
 )
 
+func NewSql(tmp *t.Template, params interface{}) string {
+	var buffer bytes.Buffer
+	tmp.Execute(&buffer, params)
+	return buffer.String()
+}
+
+var TEMPLATE = template.New("SQL")
+
 func main() {
-	ms := web.Mservice{
-		Apiid:  1,
-		Uri:    "a",
-		Desc:   "d",
-		Status: 2,
-		Filters: []web.Mfilter{
-			web.Mfilter{
-				Filterid: 2,
-				Name:     "mf",
-				Status:   0,
-			},
-		},
+	var UPDATE0, _ = TEMPLATE.Parse(`
+	update api set
+		status = {{.Status}},
+		uri = '{{.Uri}}',
+		display_name = '{{.Desc}}',
+		service_id = {{.ServiceId}}
+	where
+		api_id = {{.Apiid}}`)
+	params := web.Mservice{
+		//Uri: "/aaa",
+		//Desc: "没有描述",
 	}
-	bytes, _ := json.Marshal(ms)
-	println(string(bytes))
+	print(NewSql(UPDATE0, params))
 }

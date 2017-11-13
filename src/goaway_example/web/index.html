@@ -7,7 +7,7 @@
 <div id="app" class="container">
     <nav>
         <div class="nav-wrapper">
-            <a href="#!" class="brand-logo">Goaway Admin Page</a>
+            <a href="#!" class="brand-logo center">Goaway Admin Page</a>
             <a class="waves-effect waves-light btn right"
                style="margin-top: 14px; margin-right: 15px;"
                @click="reloadServer()">
@@ -255,7 +255,7 @@
                     return $.inArray(filter, names) === -1
                 })
             },
-            changePage: function (page) {
+                changePage: function (page) {
                 this.currentPage = page
             },
             changeService: function (service, serviceId) {
