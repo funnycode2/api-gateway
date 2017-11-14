@@ -72,7 +72,7 @@ var SELECT7 = newTemplate(`
 `)
 
 var SELECT9 = newTemplate(`
-	select api_id from api where uri = '%s'
+	select api_id from api where uri = '{{.Uri}}'
 `)
 
 var SELECT10 = newTemplate(`
@@ -83,7 +83,7 @@ var SELECT10 = newTemplate(`
 var SELECT11 = newTemplate(`
 	select
 		a.filter_id as filterid, a.name, a.status
-	from filter a 
+	from filter a
 	where a.api_id = {{.Apiid}}
 `)
 
