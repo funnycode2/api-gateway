@@ -24,6 +24,7 @@ type Mhost struct {
 }
 
 type Mfilter struct {
+	Apiid    int
 	Filterid int
 	Name     string
 	Status   int
