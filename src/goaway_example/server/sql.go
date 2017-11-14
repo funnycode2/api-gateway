@@ -1,4 +1,4 @@
-package sql
+package server
 
 import (
 	t "text/template"
@@ -47,7 +47,7 @@ var SELECT0 = newTemplate(`
 
 //查询服务前缀和主机(含端口)的对应关系
 var SELECT1 = newTemplate(`
-	select a.Uri, concat(b.name, ':', b.port) as host
+	select a.Uri, concat(b.name, ':', b.port) as Host
 	from api a
 		left join service b on a.service_id = b.service_id
 	where a.status = 1

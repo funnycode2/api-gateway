@@ -16,8 +16,9 @@ type OauthFilter struct {
 }
 
 var (
-	oauthAddr = util.GetConfigCenterInstance().ConfProperties["oauth_center"]["oauth_addr"] +
-		"/user/getUser?access_token="
+	/*oauthAddr = util.GetConfigCenterInstance().ConfProperties["oauth_center"]["oauth_addr"] +
+		"/user/getUser?access_token="*/
+	oauthAddr = "???"
 )
 
 func (f *OauthFilter) Matches(url string) bool {

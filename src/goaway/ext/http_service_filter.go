@@ -29,7 +29,7 @@ func NewBasicServiceFilter(
 		log.Panic(e)
 	}
 	if !util.MatchHost(targetHostWithPort) {
-		log.Panicf("Invalid host with port: %s, only 'service', 'service:8080', '12.12.12.12', 'user.service:1080' allowed", targetHostWithPort)
+		log.Panicf("Invalid host with port: %s, only 'server', 'server:8080', '12.12.12.12', 'user.server:1080' allowed", targetHostWithPort)
 	}
 	return &basicServiceFilter{
 		prefix:             normalizePrefix,
@@ -55,5 +55,5 @@ func (f *basicServiceFilter) DoFilter(
 }
 
 func (f *basicServiceFilter) OnDestroy() {
-	log.Info("destroying basic service filter")
+	log.Info("destroying basic server filter")
 }

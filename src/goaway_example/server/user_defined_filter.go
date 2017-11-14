@@ -1,4 +1,4 @@
-package goaway_example
+package server
 
 import (
 	"github.com/valyala/fasthttp"

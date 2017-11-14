@@ -334,7 +334,7 @@ var LIFECYCLE_HOOKS = [
 
 var config = ({
   /**
-   * Option merge strategies (used in core/util/options)
+   * Option merge strategies (used in server/util/options)
    */
   optionMergeStrategies: Object.create(null),
 

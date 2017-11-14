@@ -1,4 +1,4 @@
-package web
+package server
 
 type MResult struct {
 	MPage
@@ -34,4 +34,9 @@ type Mfilter struct {
 type MPage struct {
 	TotalCount  int
 	CurrentPage int
+}
+
+type uriHost struct {
+	Uri  string
+	Host string
 }

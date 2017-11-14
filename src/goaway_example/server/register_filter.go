@@ -1,4 +1,4 @@
-package goaway_example
+package server
 
 import (
 	"github.com/labstack/gommon/log"
@@ -15,8 +15,6 @@ type BaseUriServiceFilter struct {
 func (b *BaseUriServiceFilter) Matches(uri string) bool {
 	return strings.HasPrefix(uri, b.Uri)
 }
-
-var baseServiceFilterMap = make(map[string]interface{})
 
 func NewBaseServiceFilter(uri string, filterName string) core.Filter {
 	uri, err := util.NormalizeUri(uri)
@@ -37,8 +35,4 @@ func NewBaseServiceFilter(uri string, filterName string) core.Filter {
 	}
 	log.Errorf("Unknown filter name: %s", filterName)
 	return nil
-}
-
-func init() {
-	baseServiceFilterMap[""] = MsDownloadFilter{}
 }

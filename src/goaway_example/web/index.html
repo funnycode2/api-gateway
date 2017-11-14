@@ -175,7 +175,7 @@
                 var reload = confirm('reload server?');
                 if (reload) {
                     $.ajax({
-                        url: '/admin/service/reload',
+                        url: '/admin/server/reload',
                         async: false,
                         success: function (data) {
                             var code = parseInt(data)
@@ -287,12 +287,12 @@
                 }
             },
             cancel: function (index) {
+                this.servicelist[index].operatable = false
                 if (this.servicelist[index] && !this.servicelist[index].New) {
                     this.servicelist[index] = this.deepCopy(this.servicelistbackup[index])
                 } else {
                     this.servicelist.splice(index, 1)
                 }
-                this.servicelist[index].operatable = false
                 this.$forceUpdate()
             },
             showBody: function (service) {
@@ -301,7 +301,7 @@
             save: function (service) {
                 var _vm = this
                 $.ajax({
-                    url: '/admin/service/modify',
+                    url: '/admin/server/modify',
                     async: false,
                     method: 'post',
                     data: JSON.stringify(service),
@@ -337,7 +337,7 @@
                     })
                     var servicelist
                     $.ajax({
-                        url: '/admin/service/list?' + params,
+                        url: '/admin/server/list?' + params,
                         async: false,
                         success: function (data) {
                             servicelist = data.Mservicelist

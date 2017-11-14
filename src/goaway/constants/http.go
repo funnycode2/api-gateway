@@ -10,6 +10,7 @@ var (
 	CONTENT_TYPE = []byte("Content-Type")
 
 	APPLICATION_X_MSDOWNLOAD = []byte("application/x-msdownload")
+	APPLICATION_JSON         = []byte("application/json")
 	TEXT_HTML                = []byte("text/html;charset=utf-8")
 
 	VALUE_ALL                    = []byte("*")

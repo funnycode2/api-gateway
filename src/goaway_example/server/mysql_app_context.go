@@ -1,11 +1,9 @@
-package goaway_example
+package server
 
 import (
 	"gateway/src/goaway/core"
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
-	"gateway/src/goaway_example/web"
-	s "gateway/src/goaway_example/web/sql"
 	"strconv"
 	"fmt"
 	"errors"
@@ -32,10 +30,7 @@ func (a *mysqlAppContext) init() {
 	a.db = db
 }
 
-type uriHost struct {
-	Uri  string
-	Host string
-}
+
 
 func (a *mysqlAppContext) VisitUriHosts(ctx *core.GaContext) {
 	uriHosts := a.queryUriHosts()
@@ -58,7 +53,7 @@ func (a *mysqlAppContext) VisitUriFilters(ctx *core.GaContext) {
 }
 
 func (a *mysqlAppContext) queryUriHosts() []uriHost {
-	sqlText := s.NewSql(s.SELECT1, nil)
+	sqlText := NewSql(SELECT1, nil)
 	rows, _ := a.db.Query(sqlText)
 	defer rows.Close()
 	var uriHosts []uriHost
@@ -76,7 +71,7 @@ type uriFilter struct {
 }
 
 func (a *mysqlAppContext) queryUriFilters() []uriFilter {
-	sqlText := s.NewSql(s.SELECT2, nil)
+	sqlText := NewSql(SELECT2, nil)
 	rows, _ := a.db.Query(sqlText)
 	defer rows.Close()
 	var uriFilters []uriFilter
@@ -93,9 +88,9 @@ const PAGE_SIZE = 50
 func (a *mysqlAppContext) QueryService(
 	uri string,
 	desc string,
-	currentPage int) *web.MResult {
+	currentPage int) *MResult {
 
-	sqltext := s.NewSql(s.SELECT0, &web.Mservice{
+	sqltext := NewSql(SELECT0, &Mservice{
 		Uri:  uri,
 		Desc: desc,
 	})
@@ -104,7 +99,7 @@ func (a *mysqlAppContext) QueryService(
 	countSql := fmt.Sprintf("select count(0) from (%s) t", sqltext)
 	countRow, _ := a.db.Query(countSql)
 	defer countRow.Close()
-	mPage := web.MPage{}
+	mPage := MPage{}
 	if countRow.Next() {
 		countRow.Scan(&mPage.TotalCount)
 	}
@@ -123,27 +118,27 @@ func (a *mysqlAppContext) QueryService(
 	//获取服务查询结果
 	rows, _ := a.db.Query(sqltext)
 	defer rows.Close()
-	var services []web.Mservice
+	var services []Mservice
 	for rows.Next() {
-		ms := web.Mservice{}
+		ms := Mservice{}
 		rows.Scan(&ms.Apiid, &ms.Uri, &ms.Status, &ms.Desc, &ms.ServiceId, &ms.Name, &ms.Port)
 		services = append(services, ms)
 	}
 
 	//关联过滤器
 	for index, _ := range services {
-		sqlText := s.NewSql(s.SELECT11, services[index])
+		sqlText := NewSql(SELECT11, services[index])
 		rows, _ := a.db.Query(sqlText)
 		defer rows.Close()
 		for rows.Next() {
-			mf := web.Mfilter{}
+			mf := Mfilter{}
 			rows.Scan(&mf.Filterid, &mf.Name, &mf.Status)
 			services[index].Filters = append(services[index].Filters, mf)
 		}
 	}
 
 	//获取服务查询结果
-	select5 := s.NewSql(s.SELECT5, nil)
+	select5 := NewSql(SELECT5, nil)
 	rows0, _ := a.db.Query(select5)
 	defer rows0.Close()
 	var allFilterNames []string
@@ -153,17 +148,17 @@ func (a *mysqlAppContext) QueryService(
 		allFilterNames = append(allFilterNames, name)
 	}
 
-	newSql := s.NewSql(s.SELECT10, nil)
+	newSql := NewSql(SELECT10, nil)
 	rows1, _ := a.db.Query(newSql)
 	defer rows1.Close()
-	var allHosts []web.Mhost
+	var allHosts []Mhost
 	for rows1.Next() {
-		var host web.Mhost
+		var host Mhost
 		rows1.Scan(&host.ServiceId, &host.Name, &host.Port)
 		allHosts = append(allHosts, host)
 	}
 
-	result := web.MResult{}
+	result := MResult{}
 	result.MPage = mPage
 	result.Mservicelist = services
 	result.AllFilterNames = &allFilterNames
@@ -172,11 +167,11 @@ func (a *mysqlAppContext) QueryService(
 	return &result
 }
 
-func (a *mysqlAppContext) UpdateService(mservice *web.Mservice) error {
+func (a *mysqlAppContext) UpdateService(mservice *Mservice) error {
 	if mservice.New {
 		//如果是新的, 则需要插入, 并在插入前需要校验是否重复
 		var uriCount int
-		sqlText := s.NewSql(s.SELECT7, mservice)
+		sqlText := NewSql(SELECT7, mservice)
 		rows, _ := a.db.Query(sqlText)
 		defer rows.Close()
 		for rows.Next() {
@@ -185,10 +180,10 @@ func (a *mysqlAppContext) UpdateService(mservice *web.Mservice) error {
 		if uriCount > 0 {
 			return errors.New("uri already exists")
 		}
-		insertText := s.NewSql(s.INSERT8, mservice)
+		insertText := NewSql(INSERT8, mservice)
 		a.db.Exec(insertText)
 
-		selectText := s.NewSql(s.SELECT9, mservice)
+		selectText := NewSql(SELECT9, mservice)
 		rows0, _ := a.db.Query(selectText)
 		defer rows0.Close()
 		if rows0.Next() {
@@ -198,7 +193,7 @@ func (a *mysqlAppContext) UpdateService(mservice *web.Mservice) error {
 		}
 	} else {
 		//执行修改
-		update := s.NewSql(s.UPDATE0, mservice)
+		update := NewSql(UPDATE0, mservice)
 		a.db.Exec(update)
 	}
 
@@ -208,11 +203,11 @@ func (a *mysqlAppContext) UpdateService(mservice *web.Mservice) error {
 			if fitler.New {
 				//前台新添加的过滤器需要插入
 				fitler.Apiid = mservice.Apiid
-				sqlText := s.NewSql(s.INSERT6, fitler)
+				sqlText := NewSql(INSERT6, fitler)
 				a.db.Exec(sqlText)
 			} else {
 				//老的过滤器需要更新
-				update := s.NewSql(s.UPDATE4, fitler)
+				update := NewSql(UPDATE4, fitler)
 				a.db.Exec(update)
 			}
 
