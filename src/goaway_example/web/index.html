@@ -51,18 +51,18 @@
                      :class="{'grey lighten-2': service.Status == 0}">
                     <i class="mdi-image-filter-drama"></i>
                     <div class="chip teal white-text"
-                         @click="save(service)"
+                         @click.stop="save(service)"
                          v-show="service.operatable">
                         save
                     </div>
                     <div class="chip white-text grey"
                          v-show="service.operatable"
-                         @click="cancel(index)">
+                         @click.stop="cancel(index)">
                         cancel
                     </div>
                     <div class="chip edit-btn teal lighten-2 white-text"
                          style="margin-right: -10px;"
-                         @click="setEditable(service)"
+                         @click.stop="setEditable(service)"
                          v-show="!service.editable && service === currentEditService && (service.Status === 1)">
                         edit
                     </div>
@@ -290,6 +290,7 @@
                 this.servicelist[index].operatable = false
                 if (this.servicelist[index] && !this.servicelist[index].New) {
                     this.servicelist[index] = this.deepCopy(this.servicelistbackup[index])
+                    this.currentEditService = this.servicelist[index]
                 } else {
                     this.servicelist.splice(index, 1)
                 }
