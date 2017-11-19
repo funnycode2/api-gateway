@@ -68,7 +68,7 @@
                     </div>
                     <span style="margin-left: 20px;"
                           :class="{'grey-text': !service.editable}">
-                        {{ service.Uri }}
+                    {{ service.Uri }}
                     </span>
                     <div class="switch right" style="margin-left: 15px;">
                         <label>
@@ -84,7 +84,7 @@
                           style="width: 200px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;"
                           :class="{'grey-text': !service.editable}"
                           :title="service.Desc">
-                        {{ service.Desc }}
+                    {{ service.Desc }}
                     </span>
                 </div>
                 <div class="collapsible-body"
@@ -102,35 +102,42 @@
                         </div>
                     </div>
                     <div class="row" style="margin-bottom: 0px;">
-                        <p class="left" v-for="host in allHosts">
-                            <input :name="'host-'+service.Apiid" type="radio"
-                                   :id="service.Apiid+'-'+host.ServiceId"
-                                   :disabled="!service.editable"
-                                   :checked="host.ServiceId == service.ServiceId"
-                                   @click="changeService(service, host.ServiceId)"/>
-                            <label :for="service.Apiid+'-'+host.ServiceId">
-                                {{ host.Name + ':' + host.Port }}
+                        <div class="col s4" v-for="host in allHosts">
+                            <p class="left"style="padding-top: 10px; padding-bottom: 10px;">
+                                <input :name="'host-'+service.Apiid" type="radio"
+                                       :id="service.Apiid+'-'+host.ServiceId"
+                                       :disabled="!service.editable"
+                                       :checked="host.ServiceId == service.ServiceId"
+                                       @click="changeService(service, host.ServiceId)"/>
+                            <label :for="service.Apiid+'-'+host.ServiceId" :title="host.Name + ':' + host.Port">
+                            {{ host.Name + ':' + host.Port }}
                             </label>
-                        </p>
+                            </p>
+                        </div>
                     </div>
                     <div class="row" style="margin-left: 0; margin-bottom: 0;">
-                        <p v-for="(filter, index) in service.Filters" class="left">
-                            <input :id="'filter-'+filter.Filterid"
-                                   type="checkbox" class="filled-in"
-                                   :disabled="service.Status == 0 || !service.editable"
-                                   @click="changeFilterStatus(service, filter, index)"
-                                   :checked="filter.Status == 1"/>
+                        <div class="col s3" v-for="(filter, index) in service.Filters">
+                            <p class="left"
+                               style="padding-top: 10px; padding-bottom: 10px; padding-left: 20px;">
+                                <input :id="'filter-'+filter.Filterid"
+                                       type="checkbox" class="filled-in"
+                                       :disabled="service.Status == 0 || !service.editable"
+                                       @click="changeFilterStatus(service, filter, index)"
+                                       :checked="filter.Status == 1"/>
                             <label :for="'filter-'+filter.Filterid">{{ filter.Name }}</label>
-                        </p>
+                            </p>
+                        </div>
                     </div>
                     <div class="row" style="margin-left: 0; margin-bottom: 0;">
-                        <p v-for="filtername in leftFilter(allFilterNames, service.Filters)"
-                           @click="addFilter(service, filtername)"
-                           class="left">
-                            <input type="checkbox" class="filled-in"
-                                   :disabled="service.Status == 0 || !service.editable"/>
+                        <div class="col s3" v-for="filtername in leftFilter(allFilterNames, service.Filters)">
+                            <p @click="addFilter(service, filtername)"
+                               style="padding-top: 10px; padding-bottom: 10px; padding-left: 20px;"
+                               class="left">
+                                <input type="checkbox" class="filled-in"
+                                       :disabled="service.Status == 0 || !service.editable"/>
                             <label>{{ filtername }}</label>
-                        </p>
+                            </p>
+                        </div>
                     </div>
                 </div>
             </li>
@@ -255,7 +262,7 @@
                     return $.inArray(filter, names) === -1
                 })
             },
-                changePage: function (page) {
+            changePage: function (page) {
                 this.currentPage = page
             },
             changeService: function (service, serviceId) {
